@@ -12,7 +12,10 @@
 </head>
 <body>
     <h1>Live Webcam Feed</h1>
-    <img id="videoFeed" width="640" height="480" />
+    @if (User.Identity?.IsAuthenticated ?? false)
+    {
+        <img id="videoFeed" width="640" height="480" />
+    }
 
     <script>
         // Create a connection to the SignalR hub

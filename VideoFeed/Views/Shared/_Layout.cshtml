@@ -26,6 +26,15 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
+                        @if (User.Identity?.IsAuthenticated ?? false)
+                        {
+                                <a href="javascript:void(0);" class="nav-link text-dark" onclick="document.getElementById('logoutForm').submit();">Logout</a>
+                                <form id="logoutForm" asp-controller="Account" asp-action="Logout" method="post" style="display: none;"></form>
+                        }
+                        else
+                        {
+                            <a class="nav-link text-dark" asp-controller="Account" asp-action="Login">Login</a>
+                        }
                     </ul>
                 </div>
             </div>
