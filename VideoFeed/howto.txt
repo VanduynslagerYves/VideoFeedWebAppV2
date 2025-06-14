@@ -1,0 +1,12 @@
+﻿dotnet run --urls "https://0.0.0.0:7006"
+
+<!--
+| Feature                      | `<img src=blob>`                                 | `<canvas>.drawImage()`                |
+| ---------------------------- | ------------------------------------------------ | ------------------------------------- |
+| **Display latency**          | Slightly higher (due to image decoding pipeline) | Lower (you control decoding + render) |
+| **Frame control**            | Limited                                          | Full control (timing, effects)        |
+| **Memory cleanup**           | Requires revoking old URLs                       | You reuse one canvas repeatedly       |
+| **Visual effects / filters** | ❌ No                                            | ✅ Yes (via canvas API)               |
+| **Rendering FPS limit**      | Browser-determined                               | You choose (draw only on new frame)   |
+| **Blending & overlays**      | ❌ Hard                                          | ✅ Easy                               |
+-->

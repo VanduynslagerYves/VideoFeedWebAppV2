@@ -14,31 +14,31 @@
     <h1>Live Webcam Feed</h1>
     @if (User.Identity?.IsAuthenticated ?? false)
     {
-        <img id="videoFeed" width="640" height="480" />
+        <canvas id="video" width="640" height="480"></canvas>
     }
 
     <script>
         // Create a connection to the SignalR hub
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/videoStream")
+            .withUrl("/videoHub")
+            //.withHubProtocol(new MessagePackHubProtocol())
             .build();
 
-        // Handle incoming video frames from the server
-        connection.on("ReceiveVideo", function (base64String) {
-        if (base64String) {
-            document.getElementById("videoFeed").src = "data:image/jpeg;base64," + base64String;
-        }
-    });
+        const canvas = document.getElementById("video"); //canvas, better for streaming and to control memory, replacing img src can cause memory risks
+        const ctx = canvas.getContext("2d");
 
-        // Start the connection
-        connection.start().catch(function (err) {
-            console.error("SignalR connection failed:", err);
+        // On ReceiveFrame set new image in canvas
+        connection.on("ReceiveFrame", data => {
+            const img = new Image();
+            img.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+            };
+            img.src = "data:image/jpeg;base64," + data;
         });
 
-        // Optionally, start video capture when the page loads
-        window.onload = function () {
-            fetch("/Home/StartVideoStream");
-        };
+        // Start the connection
+        connection.start().catch(err => console.error(err.toString()));
     </script>
 </body>
 </html>

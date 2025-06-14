@@ -9,9 +9,8 @@ var authSettings = builder.Configuration.GetSection("Authentication");
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-builder.Services.AddSignalR();
-
-builder.Services.AddSingleton<VideoCaptureService>();
+builder.Services.AddSignalR();//.AddMessagePackProtocol();
+builder.Services.AddHostedService<CameraService>();
 
 builder.Services.AddCors(options =>
 {
@@ -82,7 +81,7 @@ app.UseAuthorization();
 
 app.MapStaticAssets();
 
-app.MapHub<VideoStreamHub>("/videoStream");
+app.MapHub<VideoHub>("/videoHub");
 
 app.MapControllerRoute(
     name: "default",

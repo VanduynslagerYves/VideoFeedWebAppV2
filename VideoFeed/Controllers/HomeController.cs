@@ -2,32 +2,15 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VideoFeed.Models;
-using VideoFeed.Video;
 
 namespace VideoFeed.Controllers;
 
-public class HomeController(VideoCaptureService videoCaptureService) : Controller
+public class HomeController() : Controller
 {
-    private readonly VideoCaptureService _videoCaptureService = videoCaptureService;
-
-    [AllowAnonymous]
+    [Authorize]
     public IActionResult Index()
     {
         return View();
-    }
-
-    [Authorize]
-    public IActionResult StartVideoStream()
-    {
-        _videoCaptureService.StartCapture();
-        return Ok();
-    }
-
-    [Authorize]
-    public IActionResult StopVideoStream()
-    {
-        _videoCaptureService.StopCapture();
-        return Ok();
     }
 
     [AllowAnonymous]
