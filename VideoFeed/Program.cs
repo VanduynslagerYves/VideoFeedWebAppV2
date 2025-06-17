@@ -12,6 +12,12 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddSignalR();//.AddMessagePackProtocol();
 builder.Services.AddHostedService<CameraService>();
 
+builder.WebHost.UseKestrel();
+builder.WebHost.ConfigureKestrel((context, options) =>
+{
+    options.Configure(context.Configuration.GetSection("Kestrel"));
+});
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
@@ -29,8 +35,8 @@ builder.Services.AddAuthentication(options =>
 }).AddCookie().AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
 {
     options.Authority = authSettings["Authority"];
-    options.ClientId = authSettings["ClientId"];
-    options.ClientSecret = authSettings["ClientSecret"];
+    options.ClientId = authSettings["ClientId"]; //TODO: remove these from appsettings
+    options.ClientSecret = authSettings["ClientSecret"]; //TODO: remove these from appsettings
     options.ResponseType = "code"; // Use "code" for authorization code flow
     options.SaveTokens = true;
 

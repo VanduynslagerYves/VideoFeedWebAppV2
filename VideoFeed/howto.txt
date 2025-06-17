@@ -10,3 +10,26 @@
 | **Rendering FPS limit**      | Browser-determined                               | You choose (draw only on new frame)   |
 | **Blending & overlays**      | ❌ Hard                                          | ✅ Easy                               |
 -->
+
+install .net sdk on linux:
+# 1. Install only the runtime for latest STS version (.NET 9)
+curl -sSL https://dot.net/v1/dotnet-install.sh \
+  | bash /dev/stdin --channel STS --runtime dotnet
+
+# 2. Add to PATH
+echo 'export DOTNET_ROOT=$HOME/.dotnet' >> ~/.bashrc
+echo 'export PATH=$PATH:$HOME/.dotnet' >> ~/.bashrc
+source ~/.bashrc
+
+# 3. Verify runtime installation
+dotnet --list-runtimes
+
+dotnet publish -c Release -r linux-arm64 --self-contained false -o ./publish
+
+scp -r ./publish katalyst@192.168.1.105:/home/katalyst/videofeed
+
+in videofeed: chmod +x VideoFeed
+
+run: ./VideoFeed
+
+niet vergeten van callback urls voor auth0 in te stellen
