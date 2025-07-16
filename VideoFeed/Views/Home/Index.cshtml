@@ -2,65 +2,21 @@
     ViewData["Title"] = "Home Page";
 }
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Live Webcam Feed</title>
+<title>Live Webcam Feed</title>
+<h1>Live Webcam Feed</h1>
 
+@if (User.Identity?.IsAuthenticated ?? false)
+{
+    <div id="app">
+        <!-- Example: Two cameras -->
+        @*  <video-feed camera-id="cam1" hub-url="/videoHub/cam1"></video-feed>
+                <video-feed camera-id="cam2" hub-url="/videoHub/cam2"></video-feed> *@
+        <video-feed camera-id="cam1" hub-url="/videoHub"></video-feed>
+    </div>
+}
+
+@section Scripts{
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-</head>
-<body>
-    <h1>Live Webcam Feed</h1>
-
-    @if (User.Identity?.IsAuthenticated ?? false)
-    {
-        <div id="app">
-            <!-- Example: Two cameras -->
-@*             <video-feed camera-id="cam1" hub-url="/videoHub/cam1"></video-feed>
-            <video-feed camera-id="cam2" hub-url="/videoHub/cam2"></video-feed> *@
-            <video-feed camera-id="cam1" hub-url="/videoHub"></video-feed>
-        </div>
-    }
-
-    <script>
-        const app = Vue.createApp({});
-
-        app.component('video-feed', {
-            props: {
-                cameraId: String,
-                hubUrl: String
-            },
-            template: `
-                <div>
-                    <h3>Camera: {{ cameraId }}</h3>
-                    <canvas :ref="cameraId" width="800" height="600"></canvas>
-                </div>
-            `,
-            mounted() {
-                const canvas = this.$refs[this.cameraId];
-                const ctx = canvas.getContext('2d');
-
-                const connection = new signalR.HubConnectionBuilder()
-                    .withUrl(this.hubUrl)
-                    .build();
-
-                connection.on("ReceiveFrame", data => {
-                    const img = new Image();
-                    img.onload = () => {
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        ctx.drawImage(img, 0, 0);
-                    };
-                    img.src = "data:image/jpeg;base64," + data;
-                });
-
-                connection.start().catch(err => console.error("SignalR Error:", err.toString()));
-            }
-        });
-
-        app.mount("#app");
-    </script>
-</body>
-</html>
+    <script src="~/js/videoFeedComponent.js"></script>
+}
