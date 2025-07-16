@@ -5,40 +5,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Live Webcam Feed</title>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 </head>
 <body>
     <h1>Live Webcam Feed</h1>
+
     @if (User.Identity?.IsAuthenticated ?? false)
     {
-        <canvas id="video" width="640" height="480"></canvas>
+        <div id="app">
+            <!-- Example: Two cameras -->
+@*             <video-feed camera-id="cam1" hub-url="/videoHub/cam1"></video-feed>
+            <video-feed camera-id="cam2" hub-url="/videoHub/cam2"></video-feed> *@
+            <video-feed camera-id="cam1" hub-url="/videoHub"></video-feed>
+        </div>
     }
 
     <script>
-        // Create a connection to the SignalR hub
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/videoHub")
-            //.withHubProtocol(new MessagePackHubProtocol())
-            .build();
+        const app = Vue.createApp({});
 
-        const canvas = document.getElementById("video"); //canvas, better for streaming and to control memory, replacing img src can cause memory risks
-        const ctx = canvas.getContext("2d");
+        app.component('video-feed', {
+            props: {
+                cameraId: String,
+                hubUrl: String
+            },
+            template: `
+                <div>
+                    <h3>Camera: {{ cameraId }}</h3>
+                    <canvas :ref="cameraId" width="800" height="600"></canvas>
+                </div>
+            `,
+            mounted() {
+                const canvas = this.$refs[this.cameraId];
+                const ctx = canvas.getContext('2d');
 
-        // On ReceiveFrame set new image in canvas
-        connection.on("ReceiveFrame", data => {
-            const img = new Image();
-            img.onload = () => {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0);
-            };
-            img.src = "data:image/jpeg;base64," + data;
+                const connection = new signalR.HubConnectionBuilder()
+                    .withUrl(this.hubUrl)
+                    .build();
+
+                connection.on("ReceiveFrame", data => {
+                    const img = new Image();
+                    img.onload = () => {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0);
+                    };
+                    img.src = "data:image/jpeg;base64," + data;
+                });
+
+                connection.start().catch(err => console.error("SignalR Error:", err.toString()));
+            }
         });
 
-        // Start the connection
-        connection.start().catch(err => console.error(err.toString()));
+        app.mount("#app");
     </script>
 </body>
 </html>
