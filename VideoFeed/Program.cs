@@ -10,7 +10,9 @@ var authSettings = builder.Configuration.GetSection("Authentication");
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddSignalR();//.AddMessagePackProtocol();
-builder.Services.AddHostedService<CameraService>();
+
+builder.Services.AddSingleton<ICameraWorkerManager, CameraWorkerManager>();
+builder.Services.AddSingleton<ICameraWorkerFactory, CameraWorkerFactory>();
 
 builder.WebHost.UseKestrel();
 builder.WebHost.ConfigureKestrel((context, options) =>
