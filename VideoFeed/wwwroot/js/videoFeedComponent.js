@@ -3,7 +3,7 @@
 app.component('video-feed', {
     props: {
         cameraId: String,
-        hubUrl: String
+        hubUrl: String,
     },
     template: `
         <div>
@@ -28,7 +28,12 @@ app.component('video-feed', {
             img.src = "data:image/jpeg;base64," + data;
         });
 
-        connection.start().catch(err => console.error("SignalR Error:", err.toString()));
+        connection
+            .start()
+            .then(() => {
+                return connection.invoke("JoinGroup", `camera_${this.cameraId}`);
+            })
+            .catch(err => console.error("SignalR Error:", err.toString()));
     }
 });
 

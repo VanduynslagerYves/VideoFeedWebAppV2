@@ -9,4 +9,14 @@ public class VideoHub : Hub
         Console.WriteLine("Client connected: " + Context.ConnectionId);
         return base.OnConnectedAsync();
     }
+
+    public async Task JoinGroup(string groupName)
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
+    }
+
+    public async Task LeaveGroup(string groupName)
+    {
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
+    }
 }
