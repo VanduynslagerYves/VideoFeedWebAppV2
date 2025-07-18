@@ -1,15 +1,14 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 
-namespace CameraAPI.Video;
-
+namespace CameraFeed.API.Video;
 public interface ICameraWorkerFactory
 {
     public ICameraWorker CreateCameraWorker(int cameraId);
 }
 
-public class CameraWorkerFactory(ILogger<CameraWorker> logger, IHubContext<VideoHub> hubContext) : ICameraWorkerFactory
+public class CameraWorkerFactory(ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : ICameraWorkerFactory
 {
-    private readonly IHubContext<VideoHub> _hubContext = hubContext;
+    private readonly IHubContext<CameraHub> _hubContext = hubContext;
     private readonly ILogger<CameraWorker> _logger = logger;
 
     public ICameraWorker CreateCameraWorker(int cameraId)

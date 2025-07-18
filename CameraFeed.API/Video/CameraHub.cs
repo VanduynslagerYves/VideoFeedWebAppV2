@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 
-namespace CameraAPI.Video;
+namespace CameraFeed.API.Video;
 
-public class VideoHub : Hub
+public class CameraHub : Hub
 {
     public override Task OnConnectedAsync()
     {

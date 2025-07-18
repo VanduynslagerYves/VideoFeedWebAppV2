@@ -1,4 +1,4 @@
-using CameraAPI.Video;
+using CameraFeed.API.Video;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -51,7 +51,7 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapHub<VideoHub>("/videoHub");
+app.MapHub<CameraHub>("/videoHub");
 
 app.MapControllers();
 
