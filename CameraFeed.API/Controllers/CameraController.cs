@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using CameraAPI.Video;
 using Microsoft.AspNetCore.Authorization;
+using CameraFeed.API.Video;
 
-namespace CameraAPI.Controllers;
+namespace CameraFeed.API.Controllers;
+
 [Route("api/[controller]")]
 [ApiController]
 public class CameraController(ICameraWorkerManager cameraWorkerManager) : ControllerBase

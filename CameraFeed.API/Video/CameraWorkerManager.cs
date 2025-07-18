@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace CameraAPI.Video;
-
+namespace CameraFeed.API.Video;
 public interface ICameraWorkerManager
 {
     void CreatecCameraWorkers();

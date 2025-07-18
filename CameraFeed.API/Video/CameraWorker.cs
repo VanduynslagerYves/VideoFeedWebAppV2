@@ -3,7 +3,7 @@ using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
 using Microsoft.AspNetCore.SignalR;
 
-namespace CameraAPI.Video;
+namespace CameraFeed.API.Video;
 
 public interface ICameraWorker
 {

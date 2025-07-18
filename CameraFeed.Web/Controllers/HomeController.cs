@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using System.Net.Http.Headers;
-using VideoFeed.Models;
+using CameraFeed.Web.Models;
 
-namespace VideoFeed.Controllers;
+namespace CameraFeed.Web.Controllers;
 
-public class HomeController(IHttpClientFactory httpClientFactory, IConfiguration config) : Controller
+public class HomeController(IHttpClientFactory httpClientFactory) : Controller
 {
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
 

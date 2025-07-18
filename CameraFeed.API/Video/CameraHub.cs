@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 
-namespace CameraAPI.Video;
+namespace CameraFeed.API.Video;
 
 public class CameraHub : Hub
 {

@@ -1,4 +1,4 @@
-using CameraAPI.Video;
+using CameraFeed.API.Video;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);

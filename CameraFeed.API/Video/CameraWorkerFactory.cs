@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 
-namespace CameraAPI.Video;
-
+namespace CameraFeed.API.Video;
 public interface ICameraWorkerFactory
 {
     public ICameraWorker CreateCameraWorker(int cameraId);

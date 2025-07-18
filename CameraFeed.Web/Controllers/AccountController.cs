@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 
-namespace VideoFeed.Controllers;
+namespace CameraFeed.Web.Controllers;
 
 public class AccountController : Controller
 {
