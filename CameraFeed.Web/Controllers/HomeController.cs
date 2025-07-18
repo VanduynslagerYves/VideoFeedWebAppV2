@@ -11,6 +11,8 @@ public class HomeController(IHttpClientFactory httpClientFactory) : Controller
 {
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
 
+
+
     [Authorize]
     public async Task<IActionResult> Index()
     {
