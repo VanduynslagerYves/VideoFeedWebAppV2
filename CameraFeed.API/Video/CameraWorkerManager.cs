@@ -3,10 +3,10 @@
 namespace CameraFeed.API.Video;
 public interface ICameraWorkerManager
 {
-    void CreatecCameraWorkers();
-    int? StartCameraWorker(int cameraId);
-    bool StopCameraWorker(int cameraId);
-    HashSet<int> GetAvailableCameraWorkers();
+    Task CreatecCameraWorkersAsync();
+    Task<int?> StartCameraWorkerAsync(int cameraId);
+    Task<bool> StopCameraWorkerAsync(int cameraId);
+    Task<HashSet<int>> GetAvailableCameraWorkersAsync();
 }
 
 public class CameraWorkerManager(ILogger<CameraWorkerManager> logger, ICameraWorkerFactory cameraWorkerFactory) : ICameraWorkerManager
@@ -16,42 +16,48 @@ public class CameraWorkerManager(ILogger<CameraWorkerManager> logger, ICameraWor
 
     private readonly ConcurrentDictionary<int, (ICameraWorker CameraWorker, CancellationTokenSource Cts, Task? Task)> _workers = new();
 
-    public void CreatecCameraWorkers()
+    public async Task CreatecCameraWorkersAsync()
     {
         var workers = new List<int> { 0, 1 };
 
         foreach(var workerId in workers)
         {
             var cts = new CancellationTokenSource();
-            var cameraWorker = _cameraWorkerFactory.CreateCameraWorker(workerId);
+            var cameraWorker = await _cameraWorkerFactory.CreateCameraWorkerAsync(workerId);
 
             _workers.TryAdd(workerId, (cameraWorker, cts, null));
         }
+
+        await Task.CompletedTask;
     }
 
-    public HashSet<int> GetAvailableCameraWorkers()
+    public async Task<HashSet<int>> GetAvailableCameraWorkersAsync()
     {
-        return [.. _workers.Keys];
+        return await Task.FromResult<HashSet<int>>([.. _workers.Keys]);
     }
 
-    public int? StartCameraWorker(int cameraId)
+    public async Task<int?> StartCameraWorkerAsync(int cameraId)
     {
         if(_workers.TryGetValue(cameraId, out var cameraWorker) && cameraWorker.Task == null)
         {
             var task = Task.Run(() => cameraWorker.CameraWorker.RunAsync(cameraWorker.Cts.Token));
             _workers[cameraId] = (cameraWorker.CameraWorker, cameraWorker.Cts, task);
+
+            await Task.Yield(); // Ensures async context is preserved
             return task.Id;
         }
 
         return null;
     }
 
-    public bool StopCameraWorker(int id)
+    public async Task<bool> StopCameraWorkerAsync(int id)
     {
         if(_workers.TryRemove(id, out var cameraWorker))
         {
             cameraWorker.Cts.Cancel();
             _logger.LogInformation($"Stopping worker {id}");
+
+            await Task.Yield(); // Ensures async context is preserved
             return true;
         }
 

@@ -14,6 +14,7 @@ public class HomeController(IHttpClientFactory httpClientFactory) : Controller
     [Authorize]
     public async Task<IActionResult> Index()
     {
+        //TODO: put this behind an api caller class
         using var httpClient = _httpClientFactory.CreateClient();
         var accessToken = await HttpContext.GetTokenAsync("access_token");
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);

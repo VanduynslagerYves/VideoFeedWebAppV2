@@ -6,48 +6,62 @@ namespace CameraFeed.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class CameraController(ICameraWorkerManager cameraWorkerManager) : ControllerBase
+public class CameraController(ICameraWorkerManager cameraWorkerManager, ILogger<CameraController> logger) : ControllerBase
 {
     private readonly ICameraWorkerManager _cameraWorkerManager = cameraWorkerManager;
+    private readonly ILogger<CameraController> _logger = logger;
 
     [Authorize]
     [HttpGet("initcams")]
-    public IActionResult InitCameras()
+    public async Task<IActionResult> InitCameras()
     {
-        Console.WriteLine(User.Identity?.Name);
-        if (_cameraWorkerManager.GetAvailableCameraWorkers().Count == 0)
+        _logger.LogInformation(message: $"Authenticated: {User.Identity?.IsAuthenticated}");
+
+        var availableWorkers = await _cameraWorkerManager.GetAvailableCameraWorkersAsync();
+        if (availableWorkers.Count == 0)
         {
-            _cameraWorkerManager.CreatecCameraWorkers();
+            await _cameraWorkerManager.CreatecCameraWorkersAsync();
+            availableWorkers = await _cameraWorkerManager.GetAvailableCameraWorkersAsync();
         }
 
-        return Ok(_cameraWorkerManager.GetAvailableCameraWorkers());
+        return Ok(availableWorkers);
     }
 
     [Authorize]
     [HttpPost("startcam/{cameraId}")]
-    public IActionResult StartCamera(int cameraId)
+    public async Task<IActionResult> StartCamera(int cameraId)
     {
-        var availableIds = _cameraWorkerManager.GetAvailableCameraWorkers();
-        if(availableIds.Count != 0 && availableIds.Contains(cameraId))
+        var availableIds = await _cameraWorkerManager.GetAvailableCameraWorkersAsync();
+        if (availableIds.Contains(cameraId))
         {
-            _cameraWorkerManager.StartCameraWorker(cameraId);
-            return Ok(new { success = true, cameraId });
+            var result = await _cameraWorkerManager.StartCameraWorkerAsync(cameraId);
+            if (result.HasValue)
+            {
+                return Ok(new { success = true, cameraId }); //TODO: Return DTO's
+            }
+            return BadRequest(new { success = false, cameraId, message = "Failed to start camera." }); //TODO: Return DTO's
         }
 
-        return NotFound(new { success = false, cameraId });
+        //TODO: Use BadRequest instead of NotFound to indicate that the camera ID is invalid
+        return NotFound(new { success = false, cameraId, message = "Camera not found." }); //TODO: Return DTO's
     }
 
     [Authorize]
     [HttpPost("stopcam/{cameraId}")]
-    public IActionResult StopCamera(int cameraId)
+    public async Task<IActionResult> StopCamera(int cameraId)
     {
-        var availableIds = _cameraWorkerManager.GetAvailableCameraWorkers();
-        if (availableIds.Count != 0 && availableIds.Contains(cameraId))
+        var availableIds = await _cameraWorkerManager.GetAvailableCameraWorkersAsync();
+        if (availableIds.Contains(cameraId))
         {
-            _cameraWorkerManager.StopCameraWorker(cameraId);
-            return Ok(new { success = true, cameraId });
+            var stopped = await _cameraWorkerManager.StopCameraWorkerAsync(cameraId);
+            if (stopped)
+            {
+                return Ok(new { success = true, cameraId }); //TODO: Return DTO's
+            }
+            return BadRequest(new { success = false, cameraId, message = "Failed to stop camera." }); //TODO: Return DTO's
         }
 
-        return NotFound(new { success = false, cameraId });
+        //TODO: Use BadRequest instead of NotFound to indicate that the camera ID is invalid
+        return NotFound(new { success = false, cameraId, message = "Camera not found." }); //TODO: Return DTO's
     }
 }
