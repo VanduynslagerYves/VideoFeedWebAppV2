@@ -51,7 +51,7 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapHub<VideoHub>("/videoHub");
+app.MapHub<CameraHub>("/videoHub");
 
 app.MapControllers();
 

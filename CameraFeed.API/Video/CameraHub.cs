@@ -2,7 +2,7 @@
 
 namespace CameraAPI.Video;
 
-public class VideoHub : Hub
+public class CameraHub : Hub
 {
     public override Task OnConnectedAsync()
     {

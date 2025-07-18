@@ -10,10 +10,10 @@ public interface ICameraWorker
     Task RunAsync(CancellationToken token);
 }
 
-public class CameraWorker(int cameraId, ILogger<CameraWorker> logger, IHubContext<VideoHub> hubContext) : ICameraWorker, IDisposable
+public class CameraWorker(int cameraId, ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : ICameraWorker, IDisposable
 {
     private readonly ILogger<CameraWorker> _logger = logger;
-    private readonly IHubContext<VideoHub> _hubContext = hubContext; 
+    private readonly IHubContext<CameraHub> _hubContext = hubContext; 
 
     private readonly int _cameraId = cameraId;
     private VideoCapture? _capture;
