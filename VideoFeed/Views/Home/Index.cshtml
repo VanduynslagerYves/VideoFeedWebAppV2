@@ -8,8 +8,8 @@
 @if (User.Identity?.IsAuthenticated ?? false)
 {
     <div id="app">
-        <video-feed camera-id="0" hub-url="/videoHub"></video-feed>
-        <video-feed camera-id="1" hub-url="/videoHub"></video-feed>
+        <video-feed camera-id="0" hub-url="https://localhost:7214/videoHub"></video-feed>
+        <video-feed camera-id="1" hub-url="https://localhost:7214/videoHub"></video-feed>
     </div>
 }
 
