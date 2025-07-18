@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using VideoFeed.Video;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,26 +9,10 @@ var authSettings = builder.Configuration.GetSection("Authentication");
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-builder.Services.AddSignalR();//.AddMessagePackProtocol();
-
-builder.Services.AddSingleton<ICameraWorkerManager, CameraWorkerManager>();
-builder.Services.AddSingleton<ICameraWorkerFactory, CameraWorkerFactory>();
 
 builder.WebHost.UseKestrel();
-builder.WebHost.ConfigureKestrel((context, options) =>
-{
-    options.Configure(context.Configuration.GetSection("Kestrel"));
-});
 
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(builder =>
-    {
-        builder.AllowAnyOrigin()  // Or specify specific origins like "http://192.168.x.x"
-               .AllowAnyMethod()
-               .AllowAnyHeader();
-    });
-});
+builder.Services.AddHttpClient();
 
 builder.Services.AddAuthentication(options =>
 {
@@ -48,6 +32,13 @@ builder.Services.AddAuthentication(options =>
 
     options.CallbackPath = "/signin-oidc"; // Default callback path
     options.SignedOutCallbackPath = "/signout-callback-oidc"; // Ensure it's properly set
+    
+    options.SaveTokens = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        NameClaimType = "name",
+        RoleClaimType = "role"
+    };
 
     options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 
@@ -66,6 +57,11 @@ builder.Services.AddAuthentication(options =>
             context.Response.Redirect(logoutUri);
             context.HandleResponse();
 
+            return Task.CompletedTask;
+        },
+        OnRedirectToIdentityProvider = context =>
+        {
+            context.ProtocolMessage.SetParameter("audience", "https://localhost:7214");
             return Task.CompletedTask;
         }
     };
@@ -88,8 +84,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
-
-app.MapHub<VideoHub>("/videoHub");
 
 app.MapControllerRoute(
     name: "default",

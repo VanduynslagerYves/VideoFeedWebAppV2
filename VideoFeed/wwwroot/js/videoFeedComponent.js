@@ -19,7 +19,7 @@ app.component('video-feed', {
             .withUrl(this.hubUrl)
             .build();
 
-        connection.on("ReceiveFrame", data => {
+        connection.on("ReceiveImgBytes", data => {
             const img = new Image();
             img.onload = () => {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);

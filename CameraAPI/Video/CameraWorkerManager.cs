@@ -1,13 +1,13 @@
 ﻿using System.Collections.Concurrent;
 
-namespace VideoFeed.Video;
+namespace CameraAPI.Video;
 
 public interface ICameraWorkerManager
 {
-    void CreateWorkers();
+    void CreatecCameraWorkers();
     int? StartCameraWorker(int cameraId);
-    bool StopWorker(int id);
-    HashSet<int> GetRunningWorkers();
+    bool StopCameraWorker(int cameraId);
+    HashSet<int> GetAvailableCameraWorkers();
 }
 
 public class CameraWorkerManager(ILogger<CameraWorkerManager> logger, ICameraWorkerFactory cameraWorkerFactory) : ICameraWorkerManager
@@ -17,7 +17,7 @@ public class CameraWorkerManager(ILogger<CameraWorkerManager> logger, ICameraWor
 
     private readonly ConcurrentDictionary<int, (ICameraWorker CameraWorker, CancellationTokenSource Cts, Task? Task)> _workers = new();
 
-    public void CreateWorkers()
+    public void CreatecCameraWorkers()
     {
         var workers = new List<int> { 0, 1 };
 
@@ -30,7 +30,7 @@ public class CameraWorkerManager(ILogger<CameraWorkerManager> logger, ICameraWor
         }
     }
 
-    public HashSet<int> GetRunningWorkers()
+    public HashSet<int> GetAvailableCameraWorkers()
     {
         return [.. _workers.Keys];
     }
@@ -47,7 +47,7 @@ public class CameraWorkerManager(ILogger<CameraWorkerManager> logger, ICameraWor
         return null;
     }
 
-    public bool StopWorker(int id)
+    public bool StopCameraWorker(int id)
     {
         if(_workers.TryRemove(id, out var cameraWorker))
         {

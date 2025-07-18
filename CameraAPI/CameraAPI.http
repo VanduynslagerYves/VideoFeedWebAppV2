@@ -1,0 +1,6 @@
+@CameraAPI_HostAddress = http://localhost:5198
+
+GET {{CameraAPI_HostAddress}}/api/camera/initcams
+Accept: application/json
+
+###
