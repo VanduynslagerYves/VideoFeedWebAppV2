@@ -10,6 +10,12 @@ public class CameraHub : Hub
         return base.OnConnectedAsync();
     }
 
+    public override Task OnDisconnectedAsync(Exception? exception)
+    {
+        Console.WriteLine("Client disconnected: " + Context.ConnectionId);
+        return base.OnDisconnectedAsync(exception);
+    }
+
     public async Task JoinGroup(string groupName)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, groupName);

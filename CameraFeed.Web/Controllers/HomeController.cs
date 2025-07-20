@@ -19,12 +19,6 @@ public class HomeController(IHttpClientFactory httpClientFactory) : Controller
         var accessToken = await HttpContext.GetTokenAsync("access_token");
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-        var initResponse = await InitCams(httpClient);
-        if(!initResponse.IsSuccessStatusCode)
-        {
-            return StatusCode((int)initResponse.StatusCode, "Error while initializing cameras");
-        }
-
         var startResponse = await StartCam(httpClient, 0);
         if (!startResponse.IsSuccessStatusCode)
         {
@@ -39,14 +33,6 @@ public class HomeController(IHttpClientFactory httpClientFactory) : Controller
 
         var content = await startResponse.Content.ReadAsStringAsync();
         return View(model: content);
-    }
-
-    private async static Task<HttpResponseMessage> InitCams(HttpClient client)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Get, $"https://localhost:7214/api/camera/initcams");
-        var response = await client.SendAsync(request);
-
-        return response;
     }
 
     private async static Task<HttpResponseMessage> StartCam(HttpClient client, int cameraId)

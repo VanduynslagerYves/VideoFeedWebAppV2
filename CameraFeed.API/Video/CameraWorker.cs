@@ -8,31 +8,40 @@ namespace CameraFeed.API.Video;
 public interface ICameraWorker
 {
     Task RunAsync(CancellationToken token);
+    public bool IsRunning { get; }
+    public int CameraId { get; }
 }
 
 public class CameraWorker(int cameraId, ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : ICameraWorker, IDisposable
 {
     private readonly ILogger<CameraWorker> _logger = logger;
-    private readonly IHubContext<CameraHub> _hubContext = hubContext; 
+    private readonly IHubContext<CameraHub> _hubContext = hubContext;
 
-    private readonly int _cameraId = cameraId;
+    public int CameraId { get; } = cameraId;
+
     private VideoCapture? _capture;
+
+    private volatile bool _isRunning; //volatile makes this bool threadsafe. if we don't assign this volatile, multiple threads or requests could read/write this value inconsistently.
+    public bool IsRunning => _isRunning;
 
     public void Dispose()
     {
         GC.SuppressFinalize(this);
+        _isRunning = false;
         _capture?.Dispose();
     }
 
     public async Task RunAsync(CancellationToken token)
     {
-        string workerId = $"Worker {_cameraId}";
-        var groupName = $"camera_{_cameraId}";
+        _isRunning = true;
+
+        string workerId = $"Worker {CameraId}";
+        var groupName = $"camera_{CameraId}";
 
         _logger.LogInformation(message: $"{workerId} started.");
 
         //Define capture device
-        _capture = new VideoCapture(_cameraId);
+        _capture = new VideoCapture(CameraId);
         _capture.Set(CapProp.FrameWidth, 800);
         _capture.Set(CapProp.FrameHeight, 600);
         _capture.Set(CapProp.Fps, 30);
@@ -55,6 +64,8 @@ public class CameraWorker(int cameraId, ILogger<CameraWorker> logger, IHubContex
 
             await Task.Delay(5, token);
         }
+
+        _isRunning = false;
 
         _logger.LogInformation(message: $"{workerId} stopped.");
     }
