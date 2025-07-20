@@ -1,4 +1,6 @@
-﻿@{
+﻿@model CameraFeed.Web.ViewModels.CameraRequestViewModel
+
+@{
     ViewData["Title"] = "Home Page";
 }
 
@@ -7,13 +9,28 @@
 
 @if (User.Identity?.IsAuthenticated ?? false)
 {
+    @if (Model.FailList.Any())
+    {
+        var errorMessage = "The following cameras failed to start: ";
+        <div class="alert alert-danger">
+            @foreach (var camId in Model.FailList)
+            {
+                errorMessage += camId;
+            }
+            <strong>@errorMessage</strong>
+        </div>
+    }
+
+
     <div id="app">
-        <video-feed camera-id="0" hub-url="https://localhost:7214/videoHub"></video-feed>
-        <video-feed camera-id="1" hub-url="https://localhost:7214/videoHub"></video-feed>
+        @foreach (var camId in Model.SuccessList)
+        {
+            <video-feed camera-id="@camId" hub-url="https://localhost:7214/videoHub"></video-feed>
+        }
     </div>
 }
 
-@section Scripts{
+@section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="~/js/videoFeedComponent.js"></script>

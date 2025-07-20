@@ -1,3 +1,4 @@
+using CameraFeed.Web.ApiClients;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
@@ -9,6 +10,9 @@ var authSettings = builder.Configuration.GetSection("Authentication");
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+//DI
+builder.Services.AddScoped<IApiClient, CameraApiClient>();
 
 builder.WebHost.UseKestrel();
 
