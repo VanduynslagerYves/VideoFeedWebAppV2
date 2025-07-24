@@ -1,4 +1,5 @@
-﻿using CameraFeed.API.Video;
+﻿using CameraFeed.API.DTO;
+using CameraFeed.API.Video;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,7 +28,7 @@ public class CameraController(ICameraWorkerManager cameraWorkerManager, ILogger<
         var availableCameraWorkers = await _cameraWorkerManager.GetAvailableCameraWorkersAsync();
         ICameraWorker cameraWorker;
 
-        if(!availableCameraWorkers.TryGetValue(cameraId, out var cameraWorkerValue)) //The cameraworker has not been initialized
+        if (!availableCameraWorkers.TryGetValue(cameraId, out var cameraWorkerValue)) //The cameraworker has not yet been initialized
         {
             cameraWorker = await _cameraWorkerManager.CreateCameraWorkerAsync(cameraId);
         }
@@ -44,12 +45,12 @@ public class CameraController(ICameraWorkerManager cameraWorkerManager, ILogger<
     {
         var cameraId = worker.CameraId;
 
-        if (worker.IsRunning) return Ok(new { success = false, cameraId, message = "Camera is already running." }); //TODO: Return DTO's
+        if (worker.IsRunning) return CameraOperationResultFactory.Create(cameraId, ResponseMessages.CameraAlreadyRunning);
 
         var taskId = await _cameraWorkerManager.StartCameraWorkerAsync(cameraId);
-        if (taskId.HasValue) return Ok(new { success = true, cameraId }); //TODO: Return DTO's
+        if (taskId.HasValue) return CameraOperationResultFactory.Create(cameraId, ResponseMessages.CameraStarted);
 
-        return BadRequest(new { success = false, cameraId, message = "Failed to start camera." }); //TODO: Return DTO's
+        return CameraOperationResultFactory.Create(cameraId, ResponseMessages.CameraStartFailed);
     }
 
     [Authorize]
@@ -61,7 +62,7 @@ public class CameraController(ICameraWorkerManager cameraWorkerManager, ILogger<
         var availableCameraWorkers = await _cameraWorkerManager.GetAvailableCameraWorkersAsync();
         if (availableCameraWorkers.TryGetValue(cameraId, out var cameraWorkerInfo))
         {
-            if(cameraWorkerInfo.CameraWorker.IsRunning)
+            if (cameraWorkerInfo.CameraWorker.IsRunning)
             {
                 var stopped = await _cameraWorkerManager.StopCameraWorkerAsync(cameraId);
                 if (stopped)

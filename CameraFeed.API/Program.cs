@@ -7,6 +7,7 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddSignalR();
 
+//DI
 builder.Services.AddSingleton<ICameraWorkerManager, CameraWorkerManager>();
 builder.Services.AddSingleton<ICameraWorkerFactory, CameraWorkerFactory>();
 
@@ -23,7 +24,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 1. Add Authentication Services
+// Add Authentication Services (validation for JWT tokens)
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

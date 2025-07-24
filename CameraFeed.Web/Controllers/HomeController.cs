@@ -8,14 +8,15 @@ using CameraFeed.Web.ViewModels;
 
 namespace CameraFeed.Web.Controllers;
 
-public class HomeController(IApiClient cameraApiClient) : Controller
+public class HomeController(ICameraApiClient cameraApiClient) : Controller
 {
-    private readonly IApiClient _cameraApiClient = cameraApiClient;
+    private readonly ICameraApiClient _cameraApiClient = cameraApiClient;
+    private const string ACCESS_TOKEN = "access_token";
 
     [Authorize]
     public async Task<IActionResult> Index()
     {
-        var accessToken = await HttpContext.GetTokenAsync("access_token");
+        var accessToken = await HttpContext.GetTokenAsync(ACCESS_TOKEN);
         if (!string.IsNullOrEmpty(accessToken)) _cameraApiClient.SetAccessToken(accessToken);
 
         var selectedCamIds = new List<int> { 0, 1 }; //TODO: Get selected cameras from user selection
@@ -23,10 +24,16 @@ public class HomeController(IApiClient cameraApiClient) : Controller
 
         foreach (var cameraSelectedId in selectedCamIds)
         {
-            var cameraStartedSuccess = await _cameraApiClient.StartCameraAsync(cameraSelectedId);
-            if (cameraStartedSuccess)
+            var result = await _cameraApiClient.StartCameraAsync(cameraSelectedId);
+            if (result == null) //something went wrong if result is null
             {
-                cameraRequestViewModel.SuccessList.Add(cameraSelectedId);
+                cameraRequestViewModel.FailList.Add(cameraSelectedId);
+                continue;
+            }
+
+            if (result.Success)
+            {
+                cameraRequestViewModel.SuccessList.Add(cameraSelectedId); //we should also send the message in the result to the viewmodel
             }
             else
             {

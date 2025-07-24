@@ -12,7 +12,7 @@ var authSettings = builder.Configuration.GetSection("Authentication");
 builder.Services.AddControllersWithViews();
 
 //DI
-builder.Services.AddScoped<IApiClient, CameraApiClient>();
+builder.Services.AddScoped<ICameraApiClient, CameraApiClient>();
 
 builder.WebHost.UseKestrel();
 

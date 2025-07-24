@@ -1,4 +1,6 @@
-﻿using System.Net.Http.Headers;
+﻿using CameraFeed.Web.ApiClients.ViewModels;
+using Newtonsoft.Json;
+using System.Net.Http.Headers;
 
 namespace CameraFeed.Web.ApiClients;
 
@@ -6,32 +8,24 @@ namespace CameraFeed.Web.ApiClients;
 /// Defines methods for interacting with a camera API, including starting a camera and setting an access token for
 /// authentication.
 /// </summary>
-public interface IApiClient
+public interface ICameraApiClient
 {
-    Task<bool> StartCameraAsync(int cameraId);
+    Task<CameraApiOperationResult?> StartCameraAsync(int cameraId);
     void SetAccessToken(string accessToken);
 }
 
 /// <summary>
-/// Provides methods to interact with a camera API, allowing operations such as starting a camera.
+/// Provides a base class for API clients that interact with camera services.
 /// </summary>
-/// <remarks>This client uses an <see cref="IHttpClientFactory"/> to create HTTP clients for making requests to
-/// the camera API. An access token must be set using <see cref="SetAccessToken"/> before making requests that require
-/// authentication.</remarks>
+/// <remarks>This abstract class defines the core functionality for API clients, including methods for starting
+/// cameras and setting authentication tokens. Implementations should provide specific details for interacting with
+/// different camera APIs. The class utilizes an <see cref="IHttpClientFactory"/> to manage HTTP client instances,
+/// ensuring efficient resource usage and connection management.</remarks>
 /// <param name="httpClientFactory"></param>
-public class CameraApiClient(IHttpClientFactory httpClientFactory) : IApiClient
+public abstract class ApiClientBase(IHttpClientFactory httpClientFactory) : ICameraApiClient
 {
-    private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
-    private string? _accessToken;
-
-    /// <summary>
-    /// Sets the access token used for authentication.
-    /// </summary>
-    /// <param name="accessToken">The access token to be used for subsequent requests. Cannot be null or empty.</param>
-    public void SetAccessToken(string accessToken)
-    {
-        _accessToken = accessToken;
-    }
+    protected readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
+    protected string? _accessToken;
 
     /// <summary>
     /// Initiates the start of a camera with the specified identifier asynchronously.
@@ -41,15 +35,66 @@ public class CameraApiClient(IHttpClientFactory httpClientFactory) : IApiClient
     /// <param name="cameraId">The unique identifier of the camera to start.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the HTTP response message from the
     /// camera API.</returns>
-    public async Task<bool> StartCameraAsync(int cameraId)
+    public abstract Task<CameraApiOperationResult?> StartCameraAsync(int cameraId);
+
+    /// <summary>
+    /// Sets the access token for the API client.
+    /// </summary>
+    /// <param name="accessToken">The access token to be used for authentication.</param>
+    public void SetAccessToken(string accessToken)
+    {
+        _accessToken = accessToken;
+    }
+}
+
+/// <summary>
+/// Provides methods to interact with a camera API, allowing operations such as starting a camera.
+/// </summary>
+/// <remarks>This client uses an <see cref="IHttpClientFactory"/> to create HTTP clients for making requests to
+/// the camera API. An access token must be set using <see cref="SetAccessToken"/> before making requests that require
+/// authentication.</remarks>
+/// <param name="httpClientFactory"></param>
+public class CameraApiClient(IHttpClientFactory httpClientFactory, ILogger<ApiClientBase> _logger) : ApiClientBase(httpClientFactory)
+{
+    protected readonly ILogger<ApiClientBase> _logger = _logger;
+
+    public override async Task<CameraApiOperationResult?> StartCameraAsync(int cameraId)
     {
         using var httpClient = _httpClientFactory.CreateClient("CameraApi");
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
 
         var request = new HttpRequestMessage(HttpMethod.Post, $"https://localhost:7214/api/camera/startcam/{cameraId}");
-        var response = await httpClient.SendAsync(request);
 
-        if (!response.IsSuccessStatusCode) return false;
-        return true;
+        try
+        {
+            var response = await httpClient.SendAsync(request);
+
+            var responseString = await response.Content.ReadAsStringAsync();
+            var responseObject = JsonConvert.DeserializeObject<CameraApiOperationResult>(responseString);
+
+            if (responseObject is null)
+            {
+                _logger.LogError("Failed to deserialize response from camera API.");
+                return null;
+            }
+
+            if (response.IsSuccessStatusCode) return responseObject;
+            return null;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "HTTP request failed when starting camera {CameraId}.", cameraId);
+            return null;
+        }
+        catch (TaskCanceledException ex)
+        {
+            _logger.LogError(ex, "HTTP request timed out when starting camera {CameraId}.", cameraId);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error when starting camera {CameraId}.", cameraId);
+            return null;
+        }
     }
 }

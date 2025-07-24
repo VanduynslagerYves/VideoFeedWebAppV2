@@ -27,8 +27,9 @@ public interface ICameraWorkerManager
 /// <param name="cameraWorkerFactory"></param>
 public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogger<CameraWorkerManager> logger) : ICameraWorkerManager
 {
-    private readonly ILogger<CameraWorkerManager> _logger = logger;
+    //Injected as singleton
     private readonly ICameraWorkerFactory _cameraWorkerFactory = cameraWorkerFactory;
+    private readonly ILogger<CameraWorkerManager> _logger = logger;
 
     private readonly ConcurrentDictionary<int, (ICameraWorker CameraWorker, CancellationTokenSource Cts, Task? Task)> _availableWorkers = new();
 
@@ -42,7 +43,7 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogg
     public async Task<ICameraWorker> CreateCameraWorkerAsync(int cameraId)
     {
         var cts = new CancellationTokenSource();
-        var cameraWorker = await _cameraWorkerFactory.CreateCameraWorkerAsync(cameraId); //pass token to factory, then to CameraWorker?
+        var cameraWorker = await _cameraWorkerFactory.CreateCameraWorkerAsync(cameraId); //TODO: pass token to factory, then to CameraWorker?
 
         _availableWorkers.TryAdd(cameraId, (cameraWorker, cts, null));
 

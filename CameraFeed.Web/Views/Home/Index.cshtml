@@ -11,16 +11,15 @@
 {
     @if (Model.FailList.Any())
     {
-        var errorMessage = "The following cameras failed to start: ";
+        var errorMessage = "The following cameras failed to start: "; @*TODO: build error string in the backend*@
         <div class="alert alert-danger">
             @foreach (var camId in Model.FailList)
             {
-                errorMessage += camId;
+                errorMessage += $"{camId} ";
             }
             <strong>@errorMessage</strong>
         </div>
     }
-
 
     <div id="app">
         @foreach (var camId in Model.SuccessList)
