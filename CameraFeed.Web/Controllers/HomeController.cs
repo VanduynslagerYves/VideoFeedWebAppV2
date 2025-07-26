@@ -13,7 +13,7 @@ public class HomeController(ICameraApiClient cameraApiClient) : Controller
     private readonly ICameraApiClient _cameraApiClient = cameraApiClient;
     private const string ACCESS_TOKEN = "access_token";
 
-    [Authorize]
+    [Authorize(Policy = "AllowedUserOnly")]
     public async Task<IActionResult> Index()
     {
         var accessToken = await HttpContext.GetTokenAsync(ACCESS_TOKEN);

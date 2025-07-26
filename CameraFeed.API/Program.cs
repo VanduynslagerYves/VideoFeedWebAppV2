@@ -17,18 +17,18 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowWeb", builder =>
     {
-        builder.WithOrigins("https://localhost:7006") // Or specify specific origins like "http://192.168.x.x"
+        builder.WithOrigins("https://katacam-g7fchjfvhucgf8gq.northeurope-01.azurewebsites.net", "https://localhost:7006", "https://pure-current-mastodon.ngrok-free.app") //Move these to appsettings.json
                .AllowAnyMethod()
                .AllowAnyHeader()
                .AllowCredentials();
     });
 });
 
-// Add Authentication Services (validation for JWT tokens)
+//Add Authentication Services (validation for JWT tokens)
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 }).AddJwtBearer(options =>
 {
     options.Authority = "https://dev-i4c6oxzfwdlecakx.eu.auth0.com/"; //TODO: get from appsettings
@@ -46,7 +46,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowWeb");
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseRouting();
 
 app.UseAuthentication();

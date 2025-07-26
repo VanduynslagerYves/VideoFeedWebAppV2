@@ -30,7 +30,7 @@ body {
   text-align: start;
 }
 
-#app{
+#camsContainer {
     display: flex;
     gap: 1rem;
     flex-wrap: wrap;

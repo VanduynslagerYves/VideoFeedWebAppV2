@@ -1,4 +1,5 @@
 using CameraFeed.Web.ApiClients;
+using CameraFeed.Web.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
@@ -13,10 +14,13 @@ builder.Services.AddControllersWithViews();
 
 //DI
 builder.Services.AddScoped<ICameraApiClient, CameraApiClient>();
+builder.Services.AddSingleton<IAllowedUsersService, AllowedUsersService>();
 
-builder.WebHost.UseKestrel();
+//builder.WebHost.UseKestrel();
+builder.WebHost.UseIISIntegration(); //Absolutely necessary for deployment as an Azure App Service
 
 builder.Services.AddHttpClient();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthentication(options =>
 {
@@ -24,19 +28,21 @@ builder.Services.AddAuthentication(options =>
     options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
 }).AddCookie().AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
 {
-    options.Authority = authSettings["Authority"];
-    options.ClientId = authSettings["ClientId"]; //TODO: remove these from appsettings
-    options.ClientSecret = authSettings["ClientSecret"]; //TODO: remove these from appsettings
+    options.Authority = authSettings["Authority"]; //These can be added as environment variables like Authentication__Authority etc. Like this there's no need for exposing secrets in appsettings.json
+    options.ClientId = authSettings["ClientId"];
+    options.ClientSecret = authSettings["ClientSecret"];
+
     options.ResponseType = "code"; // Use "code" for authorization code flow
     options.SaveTokens = true;
 
+    options.Scope.Clear();
     options.Scope.Add("openid");
     options.Scope.Add("profile");
     options.Scope.Add("email"); // Add necessary scopes
 
     options.CallbackPath = "/signin-oidc"; // Default callback path
-    options.SignedOutCallbackPath = "/signout-callback-oidc"; // Ensure it's properly set
-    
+    options.SignedOutCallbackPath = "/signout-callback-oidc";
+
     options.SaveTokens = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
@@ -65,11 +71,30 @@ builder.Services.AddAuthentication(options =>
         },
         OnRedirectToIdentityProvider = context =>
         {
-            context.ProtocolMessage.SetParameter("audience", "https://localhost:7214");
+            var apiBaseUrl = builder.Configuration["ApiBaseUrl"];
+            context.ProtocolMessage.SetParameter("audience", apiBaseUrl);
             return Task.CompletedTask;
         }
     };
 });
+
+
+//TODO: figure out how to use Auth0 roles
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("AllowedUserOnly", policy =>
+        policy.RequireAssertion(context =>
+        {
+            var httpContextAccessor = context.Resource as IHttpContextAccessor
+                ?? (context.Resource as HttpContext)?.RequestServices.GetService<IHttpContextAccessor>();
+
+var httpContext = httpContextAccessor?.HttpContext
+    ?? context.Resource as HttpContext;
+
+var allowedUsersService = httpContext?.RequestServices.GetService<IAllowedUsersService>();
+
+var accountId = context.User.Identity?.Name;
+return accountId != null && allowedUsersService?.IsAllowed(accountId) == true;
+        }));
 
 var app = builder.Build();
 
@@ -81,7 +106,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseRouting();
 
 app.UseAuthentication();

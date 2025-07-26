@@ -21,11 +21,19 @@
         </div>
     }
 
-    <div id="app">
+    <div id="camsContainer">
         @foreach (var camId in Model.SuccessList)
         {
-            <video-feed camera-id="@camId" hub-url="https://localhost:7214/videoHub"></video-feed>
+            @* TODO: appsettings.json *@
+            @* <video-feed camera-id="@camId" hub-url="https://localhost:7214/videoHub"></video-feed> *@
+            <video-feed camera-id="@camId" hub-url="https://pure-current-mastodon.ngrok-free.app/videoHub"></video-feed>
         }
+    </div>
+}
+else
+{
+    <div>
+        <p>NOPE</p>
     </div>
 }
 
