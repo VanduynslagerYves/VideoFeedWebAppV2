@@ -27,7 +27,7 @@ public static class CameraOperationResultFactory
             case ResponseMessages.CameraAlreadyRunning:
                 result = new CameraOperationResultDto
                 {
-                    Success = false,
+                    Success = true,
                     CameraId = cameraId,
                     Message = GetFormattedMessage(ResponseMessages.CameraAlreadyRunning, cameraId)
                 };
