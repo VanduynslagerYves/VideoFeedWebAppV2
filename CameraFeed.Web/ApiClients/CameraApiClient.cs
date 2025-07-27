@@ -64,8 +64,8 @@ public class CameraApiClient(IHttpClientFactory httpClientFactory, ILogger<ApiCl
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
 
         //TODO: use appsettings to get the base URL instead of hardcoding it
-        //var request = new HttpRequestMessage(HttpMethod.Post, $"https://localhost:7214/api/camera/startcam/{cameraId}");
-        var request = new HttpRequestMessage(HttpMethod.Post, $"https://pure-current-mastodon.ngrok-free.app/api/camera/startcam/{cameraId}");
+        var request = new HttpRequestMessage(HttpMethod.Post, $"https://localhost:7214/api/camera/startcam/{cameraId}");
+        //var request = new HttpRequestMessage(HttpMethod.Post, $"https://pure-current-mastodon.ngrok-free.app/api/camera/startcam/{cameraId}");
 
         try
         {

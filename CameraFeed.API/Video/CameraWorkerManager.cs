@@ -10,7 +10,7 @@ namespace CameraFeed.API.Video;
 /// methods to manage their lifecycle.</remarks>
 public interface ICameraWorkerManager
 {
-    Task<ICameraWorker> CreateCameraWorkerAsync(int cameraId);
+    Task<ICameraWorker> CreateCameraWorkerAsync(CameraWorkerOptions options);
     Task<int?> StartCameraWorkerAsync(int cameraId);
     Task<bool> StopCameraWorkerAsync(int cameraId);
     Task<ConcurrentDictionary<int, (ICameraWorker CameraWorker, CancellationTokenSource Cts, Task? Task)>> GetAvailableCameraWorkersAsync();
@@ -40,10 +40,11 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogg
     /// <param name="cameraId">The unique identifier of the camera for which the worker is to be created.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains an instance of  <see
     /// cref="ICameraWorker"/> associated with the specified camera ID.</returns>
-    public async Task<ICameraWorker> CreateCameraWorkerAsync(int cameraId)
+    public async Task<ICameraWorker> CreateCameraWorkerAsync(CameraWorkerOptions options)
     {
         var cts = new CancellationTokenSource();
-        var cameraWorker = await _cameraWorkerFactory.CreateCameraWorkerAsync(cameraId); //TODO: pass token to factory, then to CameraWorker?
+        var cameraId = options.CameraId;
+        var cameraWorker = await _cameraWorkerFactory.CreateCameraWorkerAsync(options); //TODO: pass token to factory, then to CameraWorker?
 
         _availableWorkers.TryAdd(cameraId, (cameraWorker, cts, null));
 

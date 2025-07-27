@@ -3,7 +3,7 @@
 namespace CameraFeed.API.Video;
 public interface ICameraWorkerFactory
 {
-    Task<ICameraWorker> CreateCameraWorkerAsync(int cameraId);
+    Task<ICameraWorker> CreateCameraWorkerAsync(CameraWorkerOptions options);
 }
 
 public class CameraWorkerFactory(ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : ICameraWorkerFactory
@@ -11,8 +11,8 @@ public class CameraWorkerFactory(ILogger<CameraWorker> logger, IHubContext<Camer
     private readonly IHubContext<CameraHub> _hubContext = hubContext;
     private readonly ILogger<CameraWorker> _logger = logger;
 
-    public async Task<ICameraWorker> CreateCameraWorkerAsync(int cameraId)
+    public async Task<ICameraWorker> CreateCameraWorkerAsync(CameraWorkerOptions options)
     {
-        return await Task.FromResult(new CameraWorker(cameraId, _logger, _hubContext));
+        return await Task.FromResult(new CameraWorker(options, _logger, _hubContext));
     }
 }

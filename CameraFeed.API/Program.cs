@@ -17,7 +17,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowWeb", builder =>
     {
-        builder.WithOrigins("https://katacam-g7fchjfvhucgf8gq.northeurope-01.azurewebsites.net", "https://localhost:7006", "https://pure-current-mastodon.ngrok-free.app") //Move these to appsettings.json
+        builder.WithOrigins("https://katacam-g7fchjfvhucgf8gq.northeurope-01.azurewebsites.net", "https://localhost:7006", "https://localhost:44300","https://pure-current-mastodon.ngrok-free.app") //Move these to appsettings.json
                .AllowAnyMethod()
                .AllowAnyHeader()
                .AllowCredentials();

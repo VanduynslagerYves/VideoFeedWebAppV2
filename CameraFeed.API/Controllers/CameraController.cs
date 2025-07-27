@@ -23,14 +23,20 @@ public class CameraController(ICameraWorkerManager cameraWorkerManager, ILogger<
 
     [Authorize]
     [HttpPost("startcam/{cameraId}")]
-    public async Task<IActionResult> StartCamera(int cameraId)
+    public async Task<IActionResult> StartCamera(int cameraId) //Add DTO for cameraId and cameraOptions and pass it down the line
     {
+        var cameraWorkerOptions = new CameraWorkerOptions
+        {
+            CameraId = cameraId,
+            UseMotionDetection = true
+        };
+
         var availableCameraWorkers = await _cameraWorkerManager.GetAvailableCameraWorkersAsync();
         ICameraWorker cameraWorker;
 
         if (!availableCameraWorkers.TryGetValue(cameraId, out var cameraWorkerValue)) //The cameraworker has not yet been initialized
         {
-            cameraWorker = await _cameraWorkerManager.CreateCameraWorkerAsync(cameraId);
+            cameraWorker = await _cameraWorkerManager.CreateCameraWorkerAsync(cameraWorkerOptions);
         }
         else
         {
