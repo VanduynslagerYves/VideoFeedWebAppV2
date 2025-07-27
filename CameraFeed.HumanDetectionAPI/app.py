@@ -8,7 +8,7 @@ from ultralytics import YOLO
 app = FastAPI()
 
 # Load pretrained YOLOv5 model (YOLOv8 under the hood now)
-model = YOLO("yolov8m.pt")  # 'n' is nano version, change to 's', 'm', 'l' for larger
+model = YOLO("yolov8l.pt")  # 'n' is nano version, change to 's', 'm', 'l' for larger
 
 @app.post("/detect-human/")
 async def detect_human(file: UploadFile = File(...)):
