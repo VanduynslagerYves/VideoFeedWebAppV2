@@ -1,6 +1,6 @@
 ﻿using Emgu.CV;
-using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
+using Emgu.CV.CvEnum;
 using Microsoft.AspNetCore.SignalR;
 
 namespace CameraFeed.API.Video;
@@ -26,12 +26,13 @@ public interface ICameraWorker
 /// <param name="cameraId"></param>
 /// <param name="logger"></param>
 /// <param name="hubContext"></param>
-public class CameraWorker(int cameraId, ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : ICameraWorker, IDisposable
+public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : ICameraWorker, IDisposable
 {
     private readonly ILogger<CameraWorker> _logger = logger;
     private readonly IHubContext<CameraHub> _hubContext = hubContext;
+    private readonly CameraWorkerOptions _options = options;
 
-    public int CameraId { get; } = cameraId;
+    public int CameraId { get; } = options.CameraId;
 
     private VideoCapture? _capture;
 
@@ -63,27 +64,36 @@ public class CameraWorker(int cameraId, ILogger<CameraWorker> logger, IHubContex
 
         _logger.LogInformation(message: $"{workerId} started.");
 
-        //Define capture device
-        _capture = new VideoCapture(CameraId);
-        _capture.Set(CapProp.FrameWidth, 800);
-        _capture.Set(CapProp.FrameHeight, 600);
-        _capture.Set(CapProp.Fps, 30);
-        _capture.Set(CapProp.FourCC, VideoWriter.Fourcc('M', 'J', 'P', 'G')); // MJPEG if supported
+        // Create a background subtractor (MOG2) for motion detection
+        var subtractor = new BackgroundSubtractorMOG2();
+        var fgMask = new Mat();
+
+        InitCam();
 
         while (!token.IsCancellationRequested)
         {
-            if (_capture != null && _capture.IsOpened)
+            if (!CamReady())
             {
-                using var capturedFrame = _capture.QueryFrame(); // Capture a frame
-                if (capturedFrame != null && !capturedFrame.IsEmpty)
+                _logger.LogWarning(message: $"{workerId} could not open camera with ID {CameraId}. Retrying...");
+                _capture?.Dispose();
+                InitCam();
+                if (!CamReady())
                 {
-                    // Convert the captured frame (Mat) to a byte array
-                    byte[] imageBytes = ConvertFrameToByteArray(capturedFrame);
-
-                    // Send the image byte data to SignalR clients
-                    await _hubContext.Clients.Group(groupName).SendAsync(method: "ReceiveImgBytes", imageBytes, token);
+                    await Task.Delay(1000, token); // Wait a bit before retrying
+                    continue;
                 }
             }
+
+            using var capturedFrame = _capture!.QueryFrame(); // Capture a frame
+            if ((capturedFrame == null || capturedFrame.IsEmpty)) continue;
+
+            if(_options.UseMotionDetection) DetectMotion(capturedFrame, fgMask, subtractor);
+
+            // Convert the captured frame (Mat) to a byte array
+            var imageByteArray = ConvertFrameToByteArray(capturedFrame);
+
+            // Send the image byte data to SignalR clients
+            await _hubContext.Clients.Group(groupName).SendAsync(method: "ReceiveImgBytes", imageByteArray, token);
 
             await Task.Delay(5, token);
         }
@@ -91,6 +101,43 @@ public class CameraWorker(int cameraId, ILogger<CameraWorker> logger, IHubContex
         _isRunning = false;
 
         _logger.LogInformation(message: $"{workerId} stopped.");
+    }
+
+    /// <summary>
+    /// Detects motion in the given video frame using a background subtraction algorithm.
+    /// </summary>
+    /// <remarks>This method applies the specified background subtractor to the provided video frame to
+    /// generate a foreground mask. It then counts the non-zero pixels in the mask to determine if motion is present. If
+    /// the number of motion pixels exceeds a predefined threshold, a message indicating motion detection is logged to
+    /// the console.</remarks>
+    /// <param name="frame">The current video frame to analyze for motion.</param>
+    /// <param name="fgMask">The foreground mask where detected motion will be highlighted.</param>
+    /// <param name="subtractor">The background subtractor used to differentiate moving objects from the background.</param>
+    private static void DetectMotion(Mat frame, Mat fgMask, BackgroundSubtractorMOG2 subtractor)
+    {
+        // Apply the background subtractor to the current frame
+        subtractor.Apply(frame, fgMask);
+
+        // Count non-zero pixels in the foreground mask to detect motion
+        int motionPixels = CvInvoke.CountNonZero(fgMask);
+        if (motionPixels > 3000)
+        {
+            Console.WriteLine($"Motion Detected at {DateTime.Now}");
+        }
+    }
+
+    /// <summary>
+    /// Initializes the camera with specified settings for frame width, height, frames per second, and codec.
+    /// </summary>
+    /// <remarks>This method configures the camera to capture video at a resolution of 640x480 pixels, with a
+    /// frame rate of 30 frames per second, using the MJPEG codec if supported.</remarks>
+    private void InitCam()
+    {
+        _capture = new VideoCapture(CameraId);
+        _capture.Set(CapProp.FrameWidth, 640);
+        _capture.Set(CapProp.FrameHeight, 480);
+        _capture.Set(CapProp.Fps, 15);
+        _capture.Set(CapProp.FourCC, VideoWriter.Fourcc('M', 'J', 'P', 'G')); // MJPEG if supported
     }
 
     /// <summary>
@@ -110,6 +157,11 @@ public class CameraWorker(int cameraId, ILogger<CameraWorker> logger, IHubContex
         return imageBytes;
     }
 
+    private bool CamReady()
+    {
+        return _capture != null && _capture.IsOpened;
+    }
+
     [Obsolete("Use other more efficient method instead")]
     private static byte[] ConvertFrameToByteArray(Mat frame, string imageTempFile)
     {
@@ -125,4 +177,10 @@ public class CameraWorker(int cameraId, ILogger<CameraWorker> logger, IHubContex
         // Return the byte array of the image
         return ms.ToArray();
     }
+}
+
+public class CameraWorkerOptions
+{
+    public required int CameraId { get; set; }
+    public required bool UseMotionDetection { get; set; } = false;
 }

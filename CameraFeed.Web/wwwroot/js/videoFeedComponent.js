@@ -37,4 +37,4 @@ app.component('video-feed', {
     }
 });
 
-app.mount("#app");
+app.mount("#camsContainer");
