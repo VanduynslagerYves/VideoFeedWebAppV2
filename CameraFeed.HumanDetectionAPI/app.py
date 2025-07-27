@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File
-from fastapi.responses import JSONResponse
-from PIL import Image
+from fastapi.responses import Response
+from PIL import Image, ImageDraw
 import numpy as np
 from io import BytesIO
 from ultralytics import YOLO
@@ -20,24 +20,22 @@ async def detect_human(file: UploadFile = File(...)):
     # Run YOLOv5 model on image
     results = model.predict(img_np)
 
-    # Parse detections
-    human_detected = False
-    detections = []
+    # Draw bounding boxes
+    draw = ImageDraw.Draw(img)
+    # human_detected = False
 
     for r in results:
         for box in r.boxes:
             class_id = int(box.cls[0])
-            confidence = float(box.conf[0])
             label = model.names[class_id]
             if label.lower() == "person":
-                human_detected = True
-                detections.append({
-                    "label": label,
-                    "confidence": confidence,
-                    "bbox": box.xyxy[0].tolist()
-                })
+                # human_detected = True
+                bbox = box.xyxy[0].tolist()  # [x1, y1, x2, y2]
+                # Draw green bounding box
+                draw.rectangle(bbox, outline="green", width=3)
 
-    return JSONResponse({
-        "human_detected": human_detected,
-        "detections": detections
-    })
+    # Return the image with bounding boxes
+    buf = BytesIO()
+    img.save(buf, format="JPEG")
+    buf.seek(0)
+    return Response(content=buf.getvalue(), media_type="image/jpeg")
