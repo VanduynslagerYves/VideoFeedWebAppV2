@@ -2,6 +2,7 @@
 using Emgu.CV.Structure;
 using Emgu.CV.CvEnum;
 using Microsoft.AspNetCore.SignalR;
+using CameraFeed.API.ApiClients;
 
 namespace CameraFeed.API.Video;
 
@@ -26,17 +27,16 @@ public interface ICameraWorker
 /// <param name="cameraId"></param>
 /// <param name="logger"></param>
 /// <param name="hubContext"></param>
-public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : ICameraWorker, IDisposable
+public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> logger, IHumanDetectionApiClient humanDetectionApiClient, IHubContext<CameraHub> hubContext) : ICameraWorker, IDisposable
 {
+    private readonly IHumanDetectionApiClient _humanDetectionApiClient = humanDetectionApiClient;
     private readonly ILogger<CameraWorker> _logger = logger;
     private readonly IHubContext<CameraHub> _hubContext = hubContext;
     private readonly CameraWorkerOptions _options = options;
+    private VideoCapture? _capture;
+    private volatile bool _isRunning; //volatile makes this bool threadsafe. if we don't assign this volatile, multiple threads or requests could read/write this value inconsistently.
 
     public int CameraId { get; } = options.CameraId;
-
-    private VideoCapture? _capture;
-
-    private volatile bool _isRunning; //volatile makes this bool threadsafe. if we don't assign this volatile, multiple threads or requests could read/write this value inconsistently.
     public bool IsRunning => _isRunning;
 
     public void Dispose()
@@ -87,10 +87,13 @@ public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> log
             using var capturedFrame = _capture!.QueryFrame(); // Capture a frame
             if ((capturedFrame == null || capturedFrame.IsEmpty)) continue;
 
-            if(_options.UseMotionDetection) DetectMotion(capturedFrame, fgMask, subtractor);
-
             // Convert the captured frame (Mat) to a byte array
             var imageByteArray = ConvertFrameToByteArray(capturedFrame);
+
+            if (_options.UseMotionDetection && MotionDetected(capturedFrame, fgMask, subtractor))
+            {
+                imageByteArray = await _humanDetectionApiClient.DetectHumansAsync(imageByteArray);
+            }
 
             // Send the image byte data to SignalR clients
             await _hubContext.Clients.Group(groupName).SendAsync(method: "ReceiveImgBytes", imageByteArray, token);
@@ -113,7 +116,7 @@ public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> log
     /// <param name="frame">The current video frame to analyze for motion.</param>
     /// <param name="fgMask">The foreground mask where detected motion will be highlighted.</param>
     /// <param name="subtractor">The background subtractor used to differentiate moving objects from the background.</param>
-    private static void DetectMotion(Mat frame, Mat fgMask, BackgroundSubtractorMOG2 subtractor)
+    private static bool MotionDetected(Mat frame, Mat fgMask, BackgroundSubtractorMOG2 subtractor)
     {
         // Apply the background subtractor to the current frame
         subtractor.Apply(frame, fgMask);
@@ -123,7 +126,10 @@ public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> log
         if (motionPixels > 3000)
         {
             Console.WriteLine($"Motion Detected at {DateTime.Now}");
+            return true;
         }
+
+        return false;
     }
 
     /// <summary>

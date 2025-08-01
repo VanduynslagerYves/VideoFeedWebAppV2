@@ -22,7 +22,7 @@ public interface ICameraApiClient
 /// different camera APIs. The class utilizes an <see cref="IHttpClientFactory"/> to manage HTTP client instances,
 /// ensuring efficient resource usage and connection management.</remarks>
 /// <param name="httpClientFactory"></param>
-public abstract class ApiClientBase(IHttpClientFactory httpClientFactory) : ICameraApiClient
+public abstract class CameraApiClientBase(IHttpClientFactory httpClientFactory) : ICameraApiClient
 {
     protected readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     protected string? _accessToken;
@@ -54,9 +54,9 @@ public abstract class ApiClientBase(IHttpClientFactory httpClientFactory) : ICam
 /// the camera API. An access token must be set using <see cref="SetAccessToken"/> before making requests that require
 /// authentication.</remarks>
 /// <param name="httpClientFactory"></param>
-public class CameraApiClient(IHttpClientFactory httpClientFactory, ILogger<ApiClientBase> _logger) : ApiClientBase(httpClientFactory)
+public class CameraApiClient(IHttpClientFactory httpClientFactory, ILogger<CameraApiClientBase> _logger) : CameraApiClientBase(httpClientFactory)
 {
-    protected readonly ILogger<ApiClientBase> _logger = _logger;
+    protected readonly ILogger<CameraApiClientBase> _logger = _logger;
 
     public override async Task<CameraApiOperationResult?> StartCameraAsync(int cameraId)
     {

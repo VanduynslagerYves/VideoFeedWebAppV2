@@ -1,14 +1,42 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.responses import Response
 from PIL import Image, ImageDraw
 import numpy as np
+import asyncio
 from io import BytesIO
 from ultralytics import YOLO
 
 app = FastAPI()
-
 # Load pretrained YOLOv5 model (YOLOv8 under the hood now)
-model = YOLO("yolov8l.pt")  # 'n' is nano version, change to 's', 'm', 'l' for larger
+model = YOLO("yolov8n.pt")  # 'n' is nano version, change to 's', 'm', 'l' for larger
+
+@app.post("/detect-human-v2/")
+async def detect_human(request: Request):
+    # Read raw bytes from request body
+    contents = await request.body()
+    img = Image.open(BytesIO(contents)).convert("RGB")
+    img = img.resize((640, 480))  # Resize to model input size
+    img_np = np.array(img)
+
+    # Run YOLO model on image in a separate thread
+    loop = asyncio.get_event_loop()
+    results = await loop.run_in_executor(None, model.predict, img_np)
+
+    # Draw bounding boxes
+    draw = ImageDraw.Draw(img)
+    for r in results:
+        for box in r.boxes:
+            class_id = int(box.cls[0])
+            label = model.names[class_id]
+            if label.lower() == "person":
+                bbox = box.xyxy[0].tolist()
+                draw.rectangle(bbox, outline="green", width=3)
+
+    # Return the image with bounding boxes as raw bytes
+    buf = BytesIO()
+    img.save(buf, format="JPEG", quality=78)
+    buf.seek(0)
+    return Response(content=buf.getvalue(), media_type="application/octet-stream")
 
 @app.post("/detect-human/")
 async def detect_human(file: UploadFile = File(...)):
