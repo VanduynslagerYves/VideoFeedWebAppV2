@@ -78,7 +78,6 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-
 //TODO: figure out how to use Auth0 roles
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("AllowedUserOnly", policy =>
@@ -87,13 +86,13 @@ builder.Services.AddAuthorizationBuilder()
             var httpContextAccessor = context.Resource as IHttpContextAccessor
                 ?? (context.Resource as HttpContext)?.RequestServices.GetService<IHttpContextAccessor>();
 
-var httpContext = httpContextAccessor?.HttpContext
-    ?? context.Resource as HttpContext;
+            var httpContext = httpContextAccessor?.HttpContext
+                ?? context.Resource as HttpContext;
 
-var allowedUsersService = httpContext?.RequestServices.GetService<IAllowedUsersService>();
+            var allowedUsersService = httpContext?.RequestServices.GetService<IAllowedUsersService>();
 
-var accountId = context.User.Identity?.Name;
-return accountId != null && allowedUsersService?.IsAllowed(accountId) == true;
+            var accountId = context.User.Identity?.Name;
+            return accountId != null && allowedUsersService?.IsAllowed(accountId) == true;
         }));
 
 var app = builder.Build();

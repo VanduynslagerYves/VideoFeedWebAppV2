@@ -10,9 +10,44 @@ namespace CameraFeed.API.Video;
 /// methods to manage their lifecycle.</remarks>
 public interface ICameraWorkerManager
 {
+    /// <summary>
+    /// Asynchronously creates and initializes a new camera worker instance with the specified options.
+    /// </summary>
+    /// <remarks>The returned <see cref="ICameraWorker"/> instance is ready to use after the task completes.
+    /// Ensure that the provided <paramref name="options"/> are valid and supported by the underlying camera
+    /// system.</remarks>
+    /// <param name="options">The configuration options for the camera worker, including settings such as resolution, frame rate, and other
+    /// parameters. Cannot be null.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains an <see cref="ICameraWorker"/>
+    /// instance configured with the specified options.</returns>
     Task<ICameraWorker> CreateCameraWorkerAsync(CameraWorkerOptions options);
+    /// <summary>
+    /// Starts the camera worker asynchronously for the specified camera.
+    /// </summary>
+    /// <remarks>This method initializes and starts a background worker process for the specified camera. 
+    /// Ensure that the camera ID is valid and that the system is in a state where the worker can be started.</remarks>
+    /// <param name="cameraId">The unique identifier of the camera to start. Must be a valid and existing camera ID.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the process ID of the camera worker if the
+    /// operation succeeds; otherwise, <see langword="null"/> if the operation fails.</returns>
     Task<int?> StartCameraWorkerAsync(int cameraId);
+    /// <summary>
+    /// Stops the camera worker associated with the specified camera ID.
+    /// </summary>
+    /// <remarks>This method stops the background worker responsible for managing the specified camera. 
+    /// Ensure that the camera ID provided corresponds to an active camera worker.</remarks>
+    /// <param name="cameraId">The unique identifier of the camera whose worker should be stopped.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if the camera
+    /// worker was successfully stopped;  otherwise, <see langword="false"/>.</returns>
     Task<bool> StopCameraWorkerAsync(int cameraId);
+    /// <summary>
+    /// Asynchronously retrieves a collection of available camera workers along with their associated metadata.
+    /// </summary>
+    /// <remarks>The returned dictionary maps unique integer identifiers to tuples containing the camera
+    /// worker instance,  a cancellation token source for managing the worker's lifecycle, and an optional task
+    /// representing the worker's current operation.</remarks>
+    /// <returns>A task that represents the asynchronous operation. The task result is a  <see cref="ConcurrentDictionary{TKey,
+    /// TValue}"/> where the key is an integer identifier, and the value is a tuple  containing the camera worker (<see
+    /// cref="ICameraWorker"/>), a <see cref="CancellationTokenSource"/>, and an optional <see cref="Task"/>.</returns>
     Task<ConcurrentDictionary<int, (ICameraWorker CameraWorker, CancellationTokenSource Cts, Task? Task)>> GetAvailableCameraWorkersAsync();
 }
 
@@ -80,7 +115,10 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogg
     {
         if(_availableWorkers.TryGetValue(cameraId, out var cameraWorker) && cameraWorker.Task == null)
         {
+            _logger.LogInformation("Starting worker {id}", cameraId);
             var task = Task.Run(() => cameraWorker.CameraWorker.RunAsync(cameraWorker.Cts.Token));
+            _logger.LogInformation("Worker {id} is running...", cameraId);
+
             _availableWorkers[cameraId] = (cameraWorker.CameraWorker, cameraWorker.Cts, task);
 
             await Task.Yield(); // Ensures async context is preserved
@@ -95,7 +133,7 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogg
         if(_availableWorkers.TryRemove(id, out var cameraWorker))
         {
             cameraWorker.Cts.Cancel();
-            _logger.LogInformation($"Stopping worker {id}");
+            _logger.LogInformation("Stopping worker {id}", id);
 
             await Task.Yield(); // Ensures async context is preserved
             return true;

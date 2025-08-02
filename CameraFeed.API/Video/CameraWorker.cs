@@ -13,6 +13,15 @@ namespace CameraFeed.API.Video;
 /// running state.</remarks>
 public interface ICameraWorker
 {
+    /// <summary>
+    /// Executes an asynchronous operation that runs until completion or until the specified cancellation token is
+    /// triggered.
+    /// </summary>
+    /// <remarks>This method is designed to perform a long-running or continuous operation. Callers should
+    /// ensure proper handling of the <paramref name="token"/> to manage cancellation effectively.</remarks>
+    /// <param name="token">A <see cref="CancellationToken"/> used to signal cancellation of the operation. The operation will terminate
+    /// early if the token is canceled.</param>
+    /// <returns>A <see cref="Task"/> that represents the asynchronous operation.</returns>
     Task RunAsync(CancellationToken token);
     public bool IsRunning { get; }
     public int CameraId { get; }
@@ -39,6 +48,11 @@ public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> log
     public int CameraId { get; } = options.CameraId;
     public bool IsRunning => _isRunning;
 
+    /// <summary>
+    /// Releases all resources used by the current instance of the class.
+    /// </summary>
+    /// <remarks>This method should be called when the instance is no longer needed to free up resources.  It
+    /// suppresses finalization and disposes of any managed resources held by the instance.</remarks>
     public void Dispose()
     {
         GC.SuppressFinalize(this);
@@ -62,8 +76,6 @@ public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> log
         string workerId = $"Worker {CameraId}";
         var groupName = $"camera_{CameraId}";
 
-        _logger.LogInformation(message: $"{workerId} started.");
-
         // Create a background subtractor (MOG2) for motion detection
         var subtractor = new BackgroundSubtractorMOG2();
         var fgMask = new Mat();
@@ -74,7 +86,7 @@ public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> log
         {
             if (!CamReady())
             {
-                _logger.LogWarning(message: $"{workerId} could not open camera with ID {CameraId}. Retrying...");
+                _logger.LogWarning(message: "{workerId} could not open camera with ID {CameraId}. Retrying...", workerId, CameraId);
                 _capture?.Dispose();
                 InitCam();
                 if (!CamReady())
@@ -92,6 +104,7 @@ public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> log
 
             if (_options.UseMotionDetection && MotionDetected(capturedFrame, fgMask, subtractor))
             {
+                //TODO: circuitbreaker pattern when api is not available
                 imageByteArray = await _humanDetectionApiClient.DetectHumansAsync(imageByteArray);
             }
 
@@ -103,7 +116,7 @@ public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> log
 
         _isRunning = false;
 
-        _logger.LogInformation(message: $"{workerId} stopped.");
+        _logger.LogInformation(message: "{workerId} stopped.", workerId);
     }
 
     /// <summary>
@@ -116,7 +129,7 @@ public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> log
     /// <param name="frame">The current video frame to analyze for motion.</param>
     /// <param name="fgMask">The foreground mask where detected motion will be highlighted.</param>
     /// <param name="subtractor">The background subtractor used to differentiate moving objects from the background.</param>
-    private static bool MotionDetected(Mat frame, Mat fgMask, BackgroundSubtractorMOG2 subtractor)
+    private bool MotionDetected(Mat frame, Mat fgMask, BackgroundSubtractorMOG2 subtractor)
     {
         // Apply the background subtractor to the current frame
         subtractor.Apply(frame, fgMask);
@@ -125,7 +138,9 @@ public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> log
         int motionPixels = CvInvoke.CountNonZero(fgMask);
         if (motionPixels > 3000)
         {
-            Console.WriteLine($"Motion Detected at {DateTime.Now}");
+            var timeStamp = DateTime.Now;
+            _logger.LogInformation(message: "Motion detected in frame with {motionPixels} pixels at {timeStamp}", motionPixels, timeStamp);
+
             return true;
         }
 
@@ -163,6 +178,10 @@ public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> log
         return imageBytes;
     }
 
+    /// <summary>
+    /// Determines whether the camera is ready for capturing frames.
+    /// </summary>
+    /// <returns><see langword="true"/> if the camera is initialized and open for capturing; otherwise, <see langword="false"/>.</returns>
     private bool CamReady()
     {
         return _capture != null && _capture.IsOpened;
@@ -185,6 +204,11 @@ public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> log
     }
 }
 
+/// <summary>
+/// Represents configuration options for a camera worker.
+/// </summary>
+/// <remarks>This class is used to specify the settings for initializing and configuring a camera worker,
+/// including the camera to be used and whether motion detection should be enabled.</remarks>
 public class CameraWorkerOptions
 {
     public required int CameraId { get; set; }
