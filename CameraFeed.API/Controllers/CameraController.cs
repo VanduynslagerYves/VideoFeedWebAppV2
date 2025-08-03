@@ -27,6 +27,7 @@ public class CameraController(ICameraWorkerManager cameraWorkerManager, ILogger<
     {
         var cameraWorkerOptions = new CameraWorkerOptions
         {
+            UseContinuousInference = true,
             CameraId = cameraId,
             UseMotionDetection = true
         };

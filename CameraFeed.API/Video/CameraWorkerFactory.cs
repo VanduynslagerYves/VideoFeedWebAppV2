@@ -1,4 +1,4 @@
-﻿using CameraFeed.API.ApiClients;
+﻿using CameraFeed.API.Services;
 using Microsoft.AspNetCore.SignalR;
 
 namespace CameraFeed.API.Video;

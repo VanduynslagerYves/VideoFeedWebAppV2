@@ -4,3 +4,5 @@ pillow
 ultralytics
 python-multipart
 numpy
+grpcio
+grpcio-tools

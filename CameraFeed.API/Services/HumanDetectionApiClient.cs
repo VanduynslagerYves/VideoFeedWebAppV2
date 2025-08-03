@@ -1,6 +1,6 @@
 ﻿using System.Net.Http.Headers;
 
-namespace CameraFeed.API.ApiClients;
+namespace CameraFeed.API.Services;
 
 /// <summary>
 /// Defines an API client for detecting humans in an image.
@@ -29,6 +29,7 @@ public interface IHumanDetectionApiClient
 public abstract class HumanDetectionApiClientBase(IHttpClientFactory httpClientFactory) : IHumanDetectionApiClient
 {
     protected readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
+    //protected readonly HttpClient _httpClient = httpClientFactory.CreateClient("HumanDetectionApi");
 
     /// <summary>
     /// Analyzes the provided image data to detect human figures and returns the processed image.

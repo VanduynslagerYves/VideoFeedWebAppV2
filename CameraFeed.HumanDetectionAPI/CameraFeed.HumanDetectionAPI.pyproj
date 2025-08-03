@@ -30,6 +30,7 @@
     <Compile Include="app.py" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="human_detection.proto" />
     <Content Include="launch.cmd" />
     <Content Include="requirements.txt" />
     <Content Include="test.cmd" />

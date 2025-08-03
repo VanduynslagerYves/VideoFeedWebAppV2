@@ -2,7 +2,7 @@
 using Emgu.CV.Structure;
 using Emgu.CV.CvEnum;
 using Microsoft.AspNetCore.SignalR;
-using CameraFeed.API.ApiClients;
+using CameraFeed.API.Services;
 
 namespace CameraFeed.API.Video;
 
@@ -102,7 +102,7 @@ public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> log
             // Convert the captured frame (Mat) to a byte array
             var imageByteArray = ConvertFrameToByteArray(capturedFrame);
 
-            if (_options.UseMotionDetection && MotionDetected(capturedFrame, fgMask, subtractor))
+            if (_options.UseContinuousInference || (_options.UseMotionDetection && MotionDetected(capturedFrame, fgMask, subtractor)))
             {
                 //TODO: circuitbreaker pattern when api is not available
                 imageByteArray = await _humanDetectionApiClient.DetectHumansAsync(imageByteArray);
@@ -110,8 +110,6 @@ public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> log
 
             // Send the image byte data to SignalR clients
             await _hubContext.Clients.Group(groupName).SendAsync(method: "ReceiveImgBytes", imageByteArray, token);
-
-            await Task.Delay(5, token);
         }
 
         _isRunning = false;
@@ -136,7 +134,7 @@ public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> log
 
         // Count non-zero pixels in the foreground mask to detect motion
         int motionPixels = CvInvoke.CountNonZero(fgMask);
-        if (motionPixels > 3000)
+        if (motionPixels > 2000) //3000
         {
             var timeStamp = DateTime.Now;
             _logger.LogInformation(message: "Motion detected in frame with {motionPixels} pixels at {timeStamp}", motionPixels, timeStamp);
@@ -155,10 +153,17 @@ public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> log
     private void InitCam()
     {
         _capture = new VideoCapture(CameraId);
-        _capture.Set(CapProp.FrameWidth, 640);
-        _capture.Set(CapProp.FrameHeight, 480);
-        _capture.Set(CapProp.Fps, 15);
+        _capture.Set(CapProp.FrameWidth, 800);
+        _capture.Set(CapProp.FrameHeight, 600);
+        _capture.Set(CapProp.Fps, 30);
         _capture.Set(CapProp.FourCC, VideoWriter.Fourcc('M', 'J', 'P', 'G')); // MJPEG if supported
+    }
+
+    private static Mat ResizeFrame(Mat frame, int width, int height)
+    {
+        var resized = new Mat();
+        CvInvoke.Resize(frame, resized, new System.Drawing.Size(width, height), 0, 0, Inter.Linear);
+        return resized;
     }
 
     /// <summary>
@@ -186,22 +191,6 @@ public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> log
     {
         return _capture != null && _capture.IsOpened;
     }
-
-    [Obsolete("Use other more efficient method instead")]
-    private static byte[] ConvertFrameToByteArray(Mat frame, string imageTempFile)
-    {
-        // Create a memory stream to hold the image data
-        using var ms = new MemoryStream();
-        // Save the frame as a temporary image (in JPEG format)
-        CvInvoke.Imwrite(imageTempFile, frame);
-
-        // Now load it back into the memory stream
-        byte[] imageBytes = File.ReadAllBytes(imageTempFile);
-        ms.Write(imageBytes, 0, imageBytes.Length);
-
-        // Return the byte array of the image
-        return ms.ToArray();
-    }
 }
 
 /// <summary>
@@ -212,5 +201,6 @@ public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> log
 public class CameraWorkerOptions
 {
     public required int CameraId { get; set; }
+    public required bool UseContinuousInference { get; set; } = false;
     public required bool UseMotionDetection { get; set; } = false;
 }
