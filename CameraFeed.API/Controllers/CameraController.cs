@@ -17,11 +17,19 @@ public class CameraController(ICameraWorkerManager cameraWorkerManager, ILogger<
     [HttpPost("startcam/{cameraId}")]
     public async Task<IActionResult> StartCamera(int cameraId) //Add DTO for cameraId and cameraOptions and pass it down the line
     {
-        var cameraWorkerOptions = new CameraWorkerOptions
+        var selectedResolution = "720p"; //TODO: get from viewmodel or DTO
+        var selectedFramerate = 15; //TODO: get from viewmodel or DTO
+
+        var cameraWorkerOptions = new CameraWorkerOptions //TODO: get from viewmodel or DTO
         {
-            UseContinuousInference = true,
             CameraId = cameraId,
-            UseMotionDetection = true
+            UseMotionDetection = false,
+            UseContinuousInference = true,
+            CameraOptions = new CameraOptions
+            {
+                Resolution = SupportedCameraProperties.GetResolutionById(selectedResolution),
+                Framerate = selectedFramerate,
+            }
         };
 
         var availableCameraWorkers = await _cameraWorkerManager.GetAvailableCameraWorkersAsync();
@@ -50,13 +58,6 @@ public class CameraController(ICameraWorkerManager cameraWorkerManager, ILogger<
         if (taskId.HasValue) return CameraOperationResultFactory.Create(cameraId, ResponseMessages.CameraStarted);
 
         return CameraOperationResultFactory.Create(cameraId, ResponseMessages.CameraStartFailed);
-    }
-
-    [Authorize]
-    [HttpGet("availablecams")]
-    public async Task<List<int>> GetAvailableCameraIds()
-    {
-        return await _cameraWorkerManager.GetAvailableCameraIds();
     }
 
     [Authorize]

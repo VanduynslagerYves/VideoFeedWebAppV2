@@ -1,88 +1,69 @@
-from fastapi import FastAPI, Request #, UploadFile, File
-from fastapi.responses import Response
-from PIL import Image, ImageDraw
 import numpy as np
 import asyncio
-from io import BytesIO
-from ultralytics import YOLO
-import torch
 import concurrent.futures
+from fastapi import FastAPI, Request #, UploadFile, File # FastAPI framework for building APIs
+from fastapi.responses import Response
+from PIL import Image, ImageDraw
+from io import BytesIO
+from model_utils import load_model, get_device # Utility functions for model/device
 
+# Initialize FastAPI application
 app = FastAPI()
-# Device selection (Nvidia CUDA needs to be installed, with the matching PyTorch version))
-# If CUDA is not used, inference is slow af, resulting in choppy feed
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+# Select the best device for inference (GPU if available, else CPU)
+DEVICE = get_device()
 print(f"Inference with {DEVICE}")
 
-# Load YOLO model once, move to device
-model = YOLO("yolov8n.pt")
-model.to(DEVICE)
-model.half()
-model.fuse()
+# Load the YOLO model onto the selected device
+model = load_model("yolov8n.pt", DEVICE)
 
-# Shared thread pool for concurrent inference
+# Create a thread pool executor to handle concurrent inference requests
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
-@app.post("/detect-human-v2/")
-async def detect_human_v2(request: Request):
+@app.post("/detect-objects/")
+async def detect_objects(request: Request):
+    """
+    Receives an image via POST request, runs YOLO inference to detect persons and cars,
+    draws bounding boxes, and returns the processed image as a JPEG byte stream.
+    """
+    # Read the raw bytes from the request body
     contents = await request.body()
+    # Open the image and ensure it's in RGB format
     img = Image.open(BytesIO(contents)).convert("RGB")
+    # Convert the image to a NumPy array for model input
     img_np = np.array(img)
 
-    # Run YOLO model in thread pool
+    # Run the YOLO model prediction in a background thread to avoid blocking the event loop
     loop = asyncio.get_event_loop()
-    # Filter for person and car classes
-    results = await loop.run_in_executor(executor, lambda: model.predict(img_np, classes=[0,2]))
+    results = await loop.run_in_executor(
+        executor,
+        lambda: model.predict(
+            img_np,
+            classes=[0, 2])  # Only detect 'person' (class 0) and 'car' (class 2)
+    )
 
+    # Draw bounding boxes for detected persons and cars
     draw = ImageDraw.Draw(img)
     for result in results:
         for box in result.boxes:
             class_id = int(box.cls[0])
             label = model.names[class_id].lower()
-            # if label not in ("person", "car"):
-            #     continue
             bbox = box.xyxy[0].tolist()
             if label == "person":
-                draw.rectangle(bbox, outline="green", width=2)
+                draw.rectangle(bbox, outline="green", width=3)
             elif label == "car":
-                draw.rectangle(bbox, outline="blue", width=2)
+                draw.rectangle(bbox, outline="blue", width=3)
 
+    # Save the processed image to a buffer as JPEG
     buf = BytesIO()
     img.save(buf, format="JPEG", quality=78)
     buf.seek(0)
+    # Return the image bytes as a binary response
     return Response(content=buf.getvalue(), media_type="application/octet-stream")
 
-# @app.post("/detect-human/")
-# async def detect_human(file: UploadFile = File(...)):
-#     # Read file bytes and load image
-#     contents = await file.read()
-#     img = Image.open(BytesIO(contents)).convert("RGB")
-#     img_np = np.array(img)
-
-#     # Run YOLOv5 model on image
-#     results = model.predict(img_np)
-
-#     # Draw bounding boxes
-#     draw = ImageDraw.Draw(img)
-#     # human_detected = False
-
-#     for r in results:
-#         for box in r.boxes:
-#             class_id = int(box.cls[0])
-#             label = model.names[class_id]
-#             if label.lower() == "person":
-#                 # human_detected = True
-#                 bbox = box.xyxy[0].tolist()  # [x1, y1, x2, y2]
-#                 # Draw green bounding box
-#                 draw.rectangle(bbox, outline="green", width=3)
-
-#     # Return the image with bounding boxes
-#     buf = BytesIO()
-#     img.save(buf, format="JPEG")
-#     buf.seek(0)
-#     return Response(content=buf.getvalue(), media_type="image/jpeg")
-
 #-----------------------------------------------
+# The commented section below is an alternative gRPC-based implementation for human detection.
+# It is not active in this FastAPI-based service.
 
 # import asyncio
 # import concurrent.futures

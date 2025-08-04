@@ -4,14 +4,17 @@ app.component('video-feed', {
     props: {
         cameraId: String,
         hubUrl: String,
+        //width: [String, Number],
+        //height: [String, Number],
     },
     template: `
         <div class="cambox">
             <h3>Camera {{ cameraId }}</h3>
-            <canvas :ref="cameraId" width="1920" height="1080"></canvas>
+            <canvas :ref="cameraId" width="1280" height="720"></canvas>
         </div>
     `,
     mounted() {
+        //:width="width" :height="height"
         const canvas = this.$refs[this.cameraId];
         const ctx = canvas.getContext('2d');
         const img = new Image(); // Reuse a single Image instance to prevent memory leaks

@@ -8,7 +8,7 @@ public interface ICameraWorkerFactory
     Task<ICameraWorker> CreateCameraWorkerAsync(CameraWorkerOptions options);
 }
 
-public class CameraWorkerFactory(ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IHumanDetectionApiClient humanDetectionApiClient) : ICameraWorkerFactory
+public class CameraWorkerFactory(ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionApiClient humanDetectionApiClient) : ICameraWorkerFactory
 {
     public async Task<ICameraWorker> CreateCameraWorkerAsync(CameraWorkerOptions options)
     {

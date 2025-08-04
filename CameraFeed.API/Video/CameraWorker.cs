@@ -14,10 +14,10 @@ public interface ICameraWorker
 }
 
 public abstract class CameraWorkerBase(CameraWorkerOptions options,
-    IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IHumanDetectionApiClient humanDetectionApiClient,
+    IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionApiClient humanDetectionApiClient,
     IHubContext<CameraHub> hubContext) : ICameraWorker
 {
-    protected readonly IHumanDetectionApiClient _humanDetectionApiClient = humanDetectionApiClient;
+    protected readonly IObjectDetectionApiClient _humanDetectionApiClient = humanDetectionApiClient;
     protected readonly IHubContext<CameraHub> _hubContext = hubContext;
     protected readonly IVideoCaptureFactory _videoCaptureFactory = videoCaptureFactory;
     protected readonly IBackgroundSubtractorFactory _backgroundSubtractorFactory = backgroundSubtractorFactory;
@@ -33,15 +33,13 @@ public abstract class CameraWorkerBase(CameraWorkerOptions options,
     protected string WorkerId => $"Worker {CameraId}";
     protected string GroupName => $"camera_{CameraId}";
 
-    protected VideoCapture? Capture;
-    protected BackgroundSubtractorMOG2 Subtractor => _backgroundSubtractorFactory.Create();
-    protected Mat FgMask { get; } = new Mat();
+    protected VideoCapture? _capture;
 
     public abstract Task RunAsync(CancellationToken token);
 }
 
 public class CameraWorker(CameraWorkerOptions options,
-    IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IHumanDetectionApiClient humanDetectionApiClient, 
+    IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionApiClient humanDetectionApiClient,
     ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : CameraWorkerBase(options, videoCaptureFactory, backgroundSubtractorFactory, humanDetectionApiClient, hubContext), IDisposable
 {
     private readonly ILogger<CameraWorker> _logger = logger;
@@ -49,22 +47,30 @@ public class CameraWorker(CameraWorkerOptions options,
     public override async Task RunAsync(CancellationToken token)
     {
         _isRunning = true;
-        InitCam();
+
+        try
+        {
+            InitCamera();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Failed to initialize camera with ID {CameraId}.", _options.CameraId);
+            _isRunning = false;
+            _capture?.Dispose();
+            return;
+        }
+
+        var subtractor = _backgroundSubtractorFactory.Create();
+        var fgMask = new Mat();
 
         while (!token.IsCancellationRequested)
         {
-            //if (!CamReady())
-            //{
-            //    await HandleCameraNotReadyAsync(WorkerId, token);
-            //    continue;
-            //}
+            using var capturedFrame = _capture!.QueryFrame();
+            if (capturedFrame == null || capturedFrame.IsEmpty) continue;
 
-            using var capturedFrame = CaptureFrame();
-            if (!IsFrameValid(capturedFrame)) continue;
+            var imageByteArray = ConvertFrameToByteArray(capturedFrame);
 
-            var imageByteArray = ConvertFrameToByteArray(capturedFrame!);
-
-            if (ShouldRunInference(capturedFrame!))//, fgMask))//, Subtractor))
+            if (_options.UseContinuousInference || (_options.UseMotionDetection && MotionDetected(capturedFrame, fgMask, subtractor)))
             {
                 imageByteArray = await RunInference(imageByteArray);
             }
@@ -73,32 +79,45 @@ public class CameraWorker(CameraWorkerOptions options,
         }
     }
 
-    protected virtual bool MotionDetected(Mat frame)//, Mat fgMask)//, BackgroundSubtractorMOG2 subtractor)
+    private void InitCamera()
     {
-        // Apply the background subtractor to the current frame
-        Subtractor.Apply(frame, FgMask);
-
-        // Count non-zero pixels in the foreground mask to detect motion
-        int motionPixels = CvInvoke.CountNonZero(FgMask);
-        if (motionPixels > 2000) //3000
+        _capture = _videoCaptureFactory.Create(_options.CameraId);
+        if (_capture == null || !_capture.IsOpened)
         {
-            var timeStamp = DateTime.Now;
-            _logger.LogInformation(message: "Motion detected in frame with {motionPixels} pixels at {timeStamp}", motionPixels, timeStamp);
-
-            return true;
+            throw new InvalidOperationException($"Camera with ID {_options.CameraId} could not be initialized. Ensure the camera is connected and accessible.");
         }
 
-        return false;
+        _capture.Set(CapProp.FrameWidth, _options.CameraOptions.Resolution.Width);
+        _capture.Set(CapProp.FrameHeight, _options.CameraOptions.Resolution.Height);
+        _capture.Set(CapProp.Fps, _options.CameraOptions.Framerate);
+        _capture.Set(CapProp.FourCC, VideoWriter.Fourcc('M', 'J', 'P', 'G')); // MJPEG if supported
     }
 
-    private void InitCam()
+    protected virtual async Task<byte[]> RunInference(byte[] imageByteArray)
     {
-        Capture = _videoCaptureFactory.Create(_options.CameraId);
+        // TODO: circuitbreaker pattern when api is not available
+        return await _humanDetectionApiClient.DetectObjectsAsync(imageByteArray);
+    }
 
-        Capture.Set(CapProp.FrameWidth, 1920);
-        Capture.Set(CapProp.FrameHeight, 1080);
-        //_capture.Set(CapProp.Fps, 30);
-        Capture.Set(CapProp.FourCC, VideoWriter.Fourcc('M', 'J', 'P', 'G')); // MJPEG if supported
+    // This is expensive wtf
+    protected virtual bool MotionDetected(Mat frame, Mat fgMask, BackgroundSubtractorMOG2 subtractor)
+    {
+        // Downscale frame for faster processing
+        var downscaleFactor = 16; // Downscale by a factor of 16
+
+        using var smallFrame = new Mat();
+        CvInvoke.Resize(frame, smallFrame, new System.Drawing.Size(frame.Width / downscaleFactor, frame.Height / downscaleFactor), interpolation: Inter.Linear);
+
+        subtractor.Apply(smallFrame, fgMask);
+
+        int motionPixels = CvInvoke.CountNonZero(fgMask);
+        // Adjust threshold for smaller frame
+        if (motionPixels > 4000 / (downscaleFactor ^ 2)) // 1/256th of original area
+        {
+            _logger.LogInformation("Motion detected in frame with {motionPixels} pixels at {timeStamp}", motionPixels, DateTime.Now);
+            return true;
+        }
+        return false;
     }
 
     protected virtual byte[] ConvertFrameToByteArray(Mat frame, int quality = 70)
@@ -106,46 +125,6 @@ public class CameraWorker(CameraWorkerOptions options,
         // Encode the Mat to JPEG directly into a byte array
         var imageBytes = frame.ToImage<Bgr, byte>().ToJpegData(quality);
         return imageBytes;
-    }
-
-    protected virtual bool CamReady()
-    {
-        return Capture != null && Capture.IsOpened;
-    }
-
-    //protected virtual async Task HandleCameraNotReadyAsync(string workerId, CancellationToken token)
-    //{
-    //    _logger.LogWarning("{workerId} could not open camera with ID {CameraId}. Retrying...", workerId, CameraId);
-    //    _capture?.Dispose();
-
-    //    InitCam();
-
-    //    if (!CamReady())
-    //    {
-    //        await Task.Delay(1000, token);
-    //    }
-    //}
-
-    protected virtual Mat? CaptureFrame()
-    {
-        return Capture?.QueryFrame();
-    }
-
-    protected virtual bool IsFrameValid(Mat? frame)
-    {
-        return frame != null && !frame.IsEmpty;
-    }
-
-    protected virtual bool ShouldRunInference(Mat frame)//, Mat fgMask)//, BackgroundSubtractorMOG2 subtractor)
-    {
-        return _options.UseContinuousInference ||
-               (_options.UseMotionDetection && MotionDetected(frame));//, fgMask));//, subtractor));
-    }
-
-    protected virtual async Task<byte[]> RunInference(byte[] imageByteArray)
-    {
-        // TODO: circuitbreaker pattern when api is not available
-        return await _humanDetectionApiClient.DetectHumansAsync(imageByteArray);
     }
 
     protected virtual async Task SendFrameToClientsAsync(byte[] imageByteArray, CancellationToken token)
@@ -157,7 +136,7 @@ public class CameraWorker(CameraWorkerOptions options,
     {
         GC.SuppressFinalize(this);
         _isRunning = false;
-        Capture?.Dispose();
+        _capture?.Dispose();
     }
 }
 
@@ -166,4 +145,11 @@ public class CameraWorkerOptions
     public required int CameraId { get; set; }
     public required bool UseContinuousInference { get; set; } = false;
     public required bool UseMotionDetection { get; set; } = false;
+    public required CameraOptions CameraOptions { get; set; }
+}
+
+public class CameraOptions
+{
+    public required CameraResolution Resolution { get; set; }
+    public required int Framerate { get; set; }
 }

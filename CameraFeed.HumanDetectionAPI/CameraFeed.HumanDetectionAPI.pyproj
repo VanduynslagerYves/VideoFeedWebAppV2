@@ -31,6 +31,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="app.py" />
+    <Compile Include="model_utils.py" />
+    <Compile Include="yolo_labels.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="human_detection.proto" />

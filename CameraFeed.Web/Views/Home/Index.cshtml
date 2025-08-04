@@ -22,10 +22,11 @@
     }
 
     <div id="camsContainer">
-        @foreach (var camId in Model.SuccessList)
+        @foreach (var cameraId in Model.SuccessList)
         {
             @* TODO: appsettings.json *@
-            <video-feed camera-id="@camId" hub-url="https://localhost:7214/videoHub"></video-feed>
+            <video-feed camera-id="@cameraId" hub-url="https://localhost:7214/videoHub"></video-feed>
+            @* width = "1280" height = "720" *@
             @* <video-feed camera-id="@camId" hub-url="https://pure-current-mastodon.ngrok-free.app/videoHub"></video-feed> *@
         }
     </div>

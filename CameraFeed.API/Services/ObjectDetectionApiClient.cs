@@ -7,7 +7,7 @@ namespace CameraFeed.API.Services;
 /// </summary>
 /// <remarks>This interface provides a method to analyze image data and determine the presence of humans. The
 /// implementation of this interface is responsible for handling the detection logic.</remarks>
-public interface IHumanDetectionApiClient
+public interface IObjectDetectionApiClient
 {
     /// <summary>
     /// Detects human figures in the provided image data.
@@ -17,16 +17,16 @@ public interface IHumanDetectionApiClient
     /// ensuring the input data meets these requirements.</remarks>
     /// <param name="imageData">The image data to analyze, represented as a byte array. The image must be in a supported format.</param>
     /// <returns>A byte array containing the processed image with detected human figures highlighted.</returns>
-    Task<byte[]> DetectHumansAsync(byte[] imageData);
+    Task<byte[]> DetectObjectsAsync(byte[] imageData);
 }
 
 /// <summary>
 /// Provides a base class for clients that interact with a human detection API.
 /// </summary>
 /// <remarks>This abstract class defines the core functionality for detecting humans in images and requires
-/// derived classes to implement the <see cref="DetectHumansAsync"/> method.</remarks>
+/// derived classes to implement the <see cref="DetectObjectsAsync"/> method.</remarks>
 /// <param name="httpClientFactory"></param>
-public abstract class HumanDetectionApiClientBase(IHttpClientFactory httpClientFactory) : IHumanDetectionApiClient
+public abstract class ObjectDetectionApiClientBase(IHttpClientFactory httpClientFactory) : IObjectDetectionApiClient
 {
     protected readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     //protected readonly HttpClient _httpClient = httpClientFactory.CreateClient("HumanDetectionApi");
@@ -39,7 +39,7 @@ public abstract class HumanDetectionApiClientBase(IHttpClientFactory httpClientF
     /// PNG.</remarks>
     /// <param name="imageData">The image data to analyze, represented as a byte array. Must not be null or empty.</param>
     /// <returns>A byte array containing the processed image with detected human figures highlighted.</returns>
-    public abstract Task<byte[]> DetectHumansAsync(byte[] imageData);
+    public abstract Task<byte[]> DetectObjectsAsync(byte[] imageData);
 }
 
 /// <summary>
@@ -49,9 +49,9 @@ public abstract class HumanDetectionApiClientBase(IHttpClientFactory httpClientF
 /// the API call fails or times out, the original image data is returned as a fallback.</remarks>
 /// <param name="httpClientFactory"></param>
 /// <param name="logger"></param>
-public class HumanDetectionApiClient(IHttpClientFactory httpClientFactory, ILogger<HumanDetectionApiClient> logger) : HumanDetectionApiClientBase(httpClientFactory)
+public class ObjectDetectionApiClient(IHttpClientFactory httpClientFactory, ILogger<ObjectDetectionApiClient> logger) : ObjectDetectionApiClientBase(httpClientFactory)
 {
-    private readonly ILogger<HumanDetectionApiClient> _logger = logger;
+    private readonly ILogger<ObjectDetectionApiClient> _logger = logger;
 
     /// <summary>
     /// Sends an image to a human detection API and retrieves the processed image with detected humans highlighted.
@@ -62,7 +62,7 @@ public class HumanDetectionApiClient(IHttpClientFactory httpClientFactory, ILogg
     /// <param name="imageData">The image data to be analyzed, represented as a byte array.</param>
     /// <returns>A byte array containing the processed image with detected humans highlighted.  If the request fails or an error
     /// occurs, the original <paramref name="imageData"/> is returned.</returns>
-    public override async Task<byte[]> DetectHumansAsync(byte[] imageData)
+    public override async Task<byte[]> DetectObjectsAsync(byte[] imageData)
     {
         using var httpClient = _httpClientFactory.CreateClient("HumanDetectionApi");
         using var content = new ByteArrayContent(imageData);
@@ -70,7 +70,7 @@ public class HumanDetectionApiClient(IHttpClientFactory httpClientFactory, ILogg
 
         try
         {
-            var response = await httpClient.PostAsync("http://127.0.0.1:8000/detect-human-v2/", content);
+            var response = await httpClient.PostAsync("http://127.0.0.1:8000/detect-objects/", content);
             response.EnsureSuccessStatusCode();
 
             return await response.Content.ReadAsByteArrayAsync();

@@ -9,7 +9,6 @@ public interface ICameraWorkerManager
     Task<int?> StartCameraWorkerAsync(int cameraId);
     Task<bool> StopCameraWorkerAsync(int cameraId);
     Task<ConcurrentDictionary<int, (ICameraWorker CameraWorker, CancellationTokenSource Cts, Task? Task)>> GetAvailableCameraWorkersAsync();
-    Task<List<int>> GetAvailableCameraIds(int maxTested = 10);
 }
 
 public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogger<CameraWorkerManager> logger) : ICameraWorkerManager
@@ -42,7 +41,7 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogg
         if(_availableWorkers.TryGetValue(cameraId, out var cameraWorker) && cameraWorker.Task == null)
         {
             _logger.LogInformation("Starting worker {id}", cameraId);
-            var task = Task.Run(() => cameraWorker.CameraWorker.RunAsync(cameraWorker.Cts.Token));
+            var task = Task.Run( async() => await cameraWorker.CameraWorker.RunAsync(cameraWorker.Cts.Token));
             _logger.LogInformation("Worker {id} is running...", cameraId);
 
             _availableWorkers[cameraId] = (cameraWorker.CameraWorker, cameraWorker.Cts, task);
@@ -52,20 +51,6 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogg
         }
 
         return null;
-    }
-
-    public async Task<List<int>> GetAvailableCameraIds(int maxTested = 10)
-    {
-        var availableIds = new List<int>();
-        for (int i = 0; i < maxTested; i++)
-        {
-            using var capture = new VideoCapture(i, VideoCapture.API.DShow); // DShow is common on Windows
-            if (capture.IsOpened)
-            {
-                availableIds.Add(i);
-            }
-        }
-        return await Task.FromResult(availableIds);
     }
 
     public async Task<bool> StopCameraWorkerAsync(int id)
