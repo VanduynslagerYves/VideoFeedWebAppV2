@@ -5,14 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CameraFeed.API.Controllers;
 
-/// <summary>
-/// Provides API endpoints for managing camera operations, including starting and stopping cameras.
-/// </summary>
-/// <remarks>This controller handles requests related to camera workers, such as starting and stopping camera
-/// streams. It interacts with the <see cref="ICameraWorkerManager"/> to manage camera worker instances and their
-/// states. Authorization is required for all endpoints.</remarks>
-/// <param name="cameraWorkerManager">Manages the workers lifecycle. Injected as singleton</param>
-/// <param name="logger"></param>
 [Route("api/[controller]")]
 [ApiController]
 public class CameraController(ICameraWorkerManager cameraWorkerManager, ILogger<CameraController> logger) : ControllerBase
@@ -58,6 +50,13 @@ public class CameraController(ICameraWorkerManager cameraWorkerManager, ILogger<
         if (taskId.HasValue) return CameraOperationResultFactory.Create(cameraId, ResponseMessages.CameraStarted);
 
         return CameraOperationResultFactory.Create(cameraId, ResponseMessages.CameraStartFailed);
+    }
+
+    [Authorize]
+    [HttpGet("availablecams")]
+    public async Task<List<int>> GetAvailableCameraIds()
+    {
+        return await _cameraWorkerManager.GetAvailableCameraIds();
     }
 
     [Authorize]

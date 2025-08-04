@@ -6,9 +6,9 @@ app.component('video-feed', {
         hubUrl: String,
     },
     template: `
-        <div>
-            <h3>Camera: {{ cameraId }}</h3>
-            <canvas :ref="cameraId" width="800" height="600"></canvas>
+        <div class="cambox">
+            <h3>Camera {{ cameraId }}</h3>
+            <canvas :ref="cameraId" width="1920" height="1080"></canvas>
         </div>
     `,
     mounted() {

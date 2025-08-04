@@ -13,9 +13,12 @@
     <InterpreterId>MSBuild|env|$(MSBuildProjectFullPath)</InterpreterId>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
-    <CommandLineArguments>app:app --reload --host 127.0.0.1 --port 9000</CommandLineArguments>
-    <InterpreterPath>C:\Program Files\Python313\python.exe</InterpreterPath>
-    <InterpreterArguments>-m uvicorn</InterpreterArguments>
+    <CommandLineArguments>
+    </CommandLineArguments>
+    <InterpreterPath>
+    </InterpreterPath>
+    <InterpreterArguments>
+    </InterpreterArguments>
     <IsWindowsApplication>False</IsWindowsApplication>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
