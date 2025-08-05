@@ -19,25 +19,25 @@ public class HomeController(ICameraApiClient cameraApiClient) : Controller
         var accessToken = await HttpContext.GetTokenAsync(ACCESS_TOKEN);
         if (!string.IsNullOrEmpty(accessToken)) _cameraApiClient.SetAccessToken(accessToken);
 
-        var selectedCamIds = new List<int> { 0, 1 }; //TODO: Get selected cameras from user selection
+        var selectedCameraIds = new List<int> { 0, 1 }; //TODO: Get selected cameras from user selection, 2 does not exist, so it will not start
         var cameraRequestViewModel = new CameraRequestViewModel();
 
-        foreach (var cameraSelectedId in selectedCamIds)
+        foreach (var cameraId in selectedCameraIds)
         {
-            var result = await _cameraApiClient.StartCameraAsync(cameraSelectedId);
+            var result = await _cameraApiClient.StartCameraAsync(cameraId);
             if (result == null) //something went wrong if result is null
             {
-                cameraRequestViewModel.FailList.Add(cameraSelectedId);
+                cameraRequestViewModel.FailList.Add(cameraId);
                 continue;
             }
 
             if (result.Success)
             {
-                cameraRequestViewModel.SuccessList.Add(cameraSelectedId); //we should also send the message in the result to the viewmodel
+                cameraRequestViewModel.SuccessList.Add(cameraId); //we should also send the message in the result to the viewmodel
             }
             else
             {
-                cameraRequestViewModel.FailList.Add(cameraSelectedId);
+                cameraRequestViewModel.FailList.Add(cameraId);
             }
         }
 

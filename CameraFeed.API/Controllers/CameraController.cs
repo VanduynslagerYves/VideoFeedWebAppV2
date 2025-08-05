@@ -5,14 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CameraFeed.API.Controllers;
 
-/// <summary>
-/// Provides API endpoints for managing camera operations, including starting and stopping cameras.
-/// </summary>
-/// <remarks>This controller handles requests related to camera workers, such as starting and stopping camera
-/// streams. It interacts with the <see cref="ICameraWorkerManager"/> to manage camera worker instances and their
-/// states. Authorization is required for all endpoints.</remarks>
-/// <param name="cameraWorkerManager">Manages the workers lifecycle. Injected as singleton</param>
-/// <param name="logger"></param>
 [Route("api/[controller]")]
 [ApiController]
 public class CameraController(ICameraWorkerManager cameraWorkerManager, ILogger<CameraController> logger) : ControllerBase
@@ -25,10 +17,19 @@ public class CameraController(ICameraWorkerManager cameraWorkerManager, ILogger<
     [HttpPost("startcam/{cameraId}")]
     public async Task<IActionResult> StartCamera(int cameraId) //Add DTO for cameraId and cameraOptions and pass it down the line
     {
-        var cameraWorkerOptions = new CameraWorkerOptions
+        var selectedResolution = "720p"; //TODO: get from viewmodel or DTO
+        var selectedFramerate = 15; //TODO: get from viewmodel or DTO
+
+        var cameraWorkerOptions = new CameraWorkerOptions //TODO: get from viewmodel or DTO
         {
             CameraId = cameraId,
-            UseMotionDetection = true
+            UseMotionDetection = false,
+            UseContinuousInference = true,
+            CameraOptions = new CameraOptions
+            {
+                Resolution = SupportedCameraProperties.GetResolutionById(selectedResolution),
+                Framerate = selectedFramerate,
+            }
         };
 
         var availableCameraWorkers = await _cameraWorkerManager.GetAvailableCameraWorkersAsync();

@@ -2,215 +2,154 @@
 using Emgu.CV.Structure;
 using Emgu.CV.CvEnum;
 using Microsoft.AspNetCore.SignalR;
-using CameraFeed.API.ApiClients;
+using CameraFeed.API.Services;
 
 namespace CameraFeed.API.Video;
 
-/// <summary>
-/// Represents a worker responsible for managing camera operations asynchronously.
-/// </summary>
-/// <remarks>This interface defines the contract for a camera worker that can be started and monitored for its
-/// running state.</remarks>
 public interface ICameraWorker
 {
-    /// <summary>
-    /// Executes an asynchronous operation that runs until completion or until the specified cancellation token is
-    /// triggered.
-    /// </summary>
-    /// <remarks>This method is designed to perform a long-running or continuous operation. Callers should
-    /// ensure proper handling of the <paramref name="token"/> to manage cancellation effectively.</remarks>
-    /// <param name="token">A <see cref="CancellationToken"/> used to signal cancellation of the operation. The operation will terminate
-    /// early if the token is canceled.</param>
-    /// <returns>A <see cref="Task"/> that represents the asynchronous operation.</returns>
     Task RunAsync(CancellationToken token);
     public bool IsRunning { get; }
     public int CameraId { get; }
 }
 
-/// <summary>
-/// Represents a worker responsible for capturing video frames from a camera and streaming them to SignalR clients.
-/// </summary>
-/// <remarks>The <see cref="CameraWorker"/> class manages video capture from a specified camera device and streams
-/// the captured frames to connected SignalR clients. It supports asynchronous operation and can be controlled using a
-/// <see cref="CancellationToken"/> to stop the worker gracefully.</remarks>
-/// <param name="cameraId"></param>
-/// <param name="logger"></param>
-/// <param name="hubContext"></param>
-public class CameraWorker(CameraWorkerOptions options, ILogger<CameraWorker> logger, IHumanDetectionApiClient humanDetectionApiClient, IHubContext<CameraHub> hubContext) : ICameraWorker, IDisposable
+public abstract class CameraWorkerBase(CameraWorkerOptions options,
+    IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionApiClient objectDetectionApiClient,
+    IHubContext<CameraHub> hubContext) : ICameraWorker
 {
-    private readonly IHumanDetectionApiClient _humanDetectionApiClient = humanDetectionApiClient;
-    private readonly ILogger<CameraWorker> _logger = logger;
-    private readonly IHubContext<CameraHub> _hubContext = hubContext;
-    private readonly CameraWorkerOptions _options = options;
-    private VideoCapture? _capture;
-    private volatile bool _isRunning; //volatile makes this bool threadsafe. if we don't assign this volatile, multiple threads or requests could read/write this value inconsistently.
+    protected readonly IObjectDetectionApiClient _objectDetectionApiClient = objectDetectionApiClient;
+    protected readonly IHubContext<CameraHub> _hubContext = hubContext;
+    protected readonly IVideoCaptureFactory _videoCaptureFactory = videoCaptureFactory;
+    protected readonly IBackgroundSubtractorFactory _backgroundSubtractorFactory = backgroundSubtractorFactory;
 
-    public int CameraId { get; } = options.CameraId;
+    protected readonly CameraWorkerOptions _options = options;
+
+    protected volatile bool _isRunning; //volatile makes this bool threadsafe. if we don't assign this volatile, multiple threads or requests could read/write this value inconsistently.
+
     public bool IsRunning => _isRunning;
 
-    /// <summary>
-    /// Releases all resources used by the current instance of the class.
-    /// </summary>
-    /// <remarks>This method should be called when the instance is no longer needed to free up resources.  It
-    /// suppresses finalization and disposes of any managed resources held by the instance.</remarks>
-    public void Dispose()
-    {
-        GC.SuppressFinalize(this);
-        _isRunning = false;
-        _capture?.Dispose();
-    }
+    public int CameraId { get; } = options.CameraId;
 
-    /// <summary>
-    /// Executes the asynchronous worker process for capturing video frames and broadcasting them to SignalR clients.
-    /// </summary>
-    /// <remarks>This method initializes the video capture device, captures frames in a loop, and sends the
-    /// frame data to SignalR clients in the specified group. The method runs until the provided <see
-    /// cref="CancellationToken"/> signals cancellation.</remarks>
-    /// <param name="token">A <see cref="CancellationToken"/> used to signal cancellation of the operation. The method will stop processing
-    /// when cancellation is requested.</param>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    public async Task RunAsync(CancellationToken token)
+    protected string WorkerId => $"Worker {CameraId}";
+    protected string GroupName => $"camera_{CameraId}";
+
+    protected VideoCapture? _capture;
+
+    public abstract Task RunAsync(CancellationToken token);
+}
+
+public class CameraWorker(CameraWorkerOptions options,
+    IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionApiClient humanDetectionApiClient,
+    ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : CameraWorkerBase(options, videoCaptureFactory, backgroundSubtractorFactory, humanDetectionApiClient, hubContext), IDisposable
+{
+    private readonly ILogger<CameraWorker> _logger = logger;
+
+    public override async Task RunAsync(CancellationToken token)
     {
         _isRunning = true;
 
-        string workerId = $"Worker {CameraId}";
-        var groupName = $"camera_{CameraId}";
+        try
+        {
+            InitCamera();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Failed to initialize camera with ID {CameraId}.", _options.CameraId);
+            _isRunning = false;
+            _capture?.Dispose();
+            return;
+        }
 
-        // Create a background subtractor (MOG2) for motion detection
-        var subtractor = new BackgroundSubtractorMOG2();
+        var subtractor = _backgroundSubtractorFactory.Create();
         var fgMask = new Mat();
-
-        InitCam();
 
         while (!token.IsCancellationRequested)
         {
-            if (!CamReady())
-            {
-                _logger.LogWarning(message: "{workerId} could not open camera with ID {CameraId}. Retrying...", workerId, CameraId);
-                _capture?.Dispose();
-                InitCam();
-                if (!CamReady())
-                {
-                    await Task.Delay(1000, token); // Wait a bit before retrying
-                    continue;
-                }
-            }
+            using var capturedFrame = _capture!.QueryFrame();
+            if (capturedFrame == null || capturedFrame.IsEmpty) continue;
 
-            using var capturedFrame = _capture!.QueryFrame(); // Capture a frame
-            if ((capturedFrame == null || capturedFrame.IsEmpty)) continue;
-
-            // Convert the captured frame (Mat) to a byte array
             var imageByteArray = ConvertFrameToByteArray(capturedFrame);
 
-            if (_options.UseMotionDetection && MotionDetected(capturedFrame, fgMask, subtractor))
+            if (_options.UseContinuousInference || (_options.UseMotionDetection && MotionDetected(capturedFrame, fgMask, subtractor)))
             {
-                //TODO: circuitbreaker pattern when api is not available
-                imageByteArray = await _humanDetectionApiClient.DetectHumansAsync(imageByteArray);
+                imageByteArray = await RunInference(imageByteArray);
             }
 
-            // Send the image byte data to SignalR clients
-            await _hubContext.Clients.Group(groupName).SendAsync(method: "ReceiveImgBytes", imageByteArray, token);
-
-            await Task.Delay(5, token);
+            await SendFrameToClientsAsync(imageByteArray, token);
         }
-
-        _isRunning = false;
-
-        _logger.LogInformation(message: "{workerId} stopped.", workerId);
     }
 
-    /// <summary>
-    /// Detects motion in the given video frame using a background subtraction algorithm.
-    /// </summary>
-    /// <remarks>This method applies the specified background subtractor to the provided video frame to
-    /// generate a foreground mask. It then counts the non-zero pixels in the mask to determine if motion is present. If
-    /// the number of motion pixels exceeds a predefined threshold, a message indicating motion detection is logged to
-    /// the console.</remarks>
-    /// <param name="frame">The current video frame to analyze for motion.</param>
-    /// <param name="fgMask">The foreground mask where detected motion will be highlighted.</param>
-    /// <param name="subtractor">The background subtractor used to differentiate moving objects from the background.</param>
-    private bool MotionDetected(Mat frame, Mat fgMask, BackgroundSubtractorMOG2 subtractor)
+    private void InitCamera()
     {
-        // Apply the background subtractor to the current frame
-        subtractor.Apply(frame, fgMask);
-
-        // Count non-zero pixels in the foreground mask to detect motion
-        int motionPixels = CvInvoke.CountNonZero(fgMask);
-        if (motionPixels > 3000)
+        _capture = _videoCaptureFactory.Create(_options.CameraId);
+        if (_capture == null || !_capture.IsOpened)
         {
-            var timeStamp = DateTime.Now;
-            _logger.LogInformation(message: "Motion detected in frame with {motionPixels} pixels at {timeStamp}", motionPixels, timeStamp);
-
-            return true;
+            throw new InvalidOperationException($"Camera with ID {_options.CameraId} could not be initialized. Ensure the camera is connected and accessible.");
         }
 
-        return false;
-    }
-
-    /// <summary>
-    /// Initializes the camera with specified settings for frame width, height, frames per second, and codec.
-    /// </summary>
-    /// <remarks>This method configures the camera to capture video at a resolution of 640x480 pixels, with a
-    /// frame rate of 30 frames per second, using the MJPEG codec if supported.</remarks>
-    private void InitCam()
-    {
-        _capture = new VideoCapture(CameraId);
-        _capture.Set(CapProp.FrameWidth, 640);
-        _capture.Set(CapProp.FrameHeight, 480);
-        _capture.Set(CapProp.Fps, 15);
+        _capture.Set(CapProp.FrameWidth, _options.CameraOptions.Resolution.Width);
+        _capture.Set(CapProp.FrameHeight, _options.CameraOptions.Resolution.Height);
+        _capture.Set(CapProp.Fps, _options.CameraOptions.Framerate);
         _capture.Set(CapProp.FourCC, VideoWriter.Fourcc('M', 'J', 'P', 'G')); // MJPEG if supported
     }
 
-    /// <summary>
-    /// Converts a video frame represented as a <see cref="Mat"/> object into a JPEG-encoded byte array.
-    /// </summary>
-    /// <remarks>This method uses the <see cref="Mat.ToImage{TColor, TDepth}"/> method to convert the frame to
-    /// an image format and then encodes it as a JPEG. The resulting byte array can be used for storage, transmission,
-    /// or further processing.</remarks>
-    /// <param name="frame">The video frame to convert. Must be a valid <see cref="Mat"/> object.</param>
-    /// <param name="quality">The quality level of the JPEG encoding, ranging from 0 to 100. Higher values produce better image quality but
-    /// result in larger file sizes. The default value is 70.</param>
-    /// <returns>A byte array containing the JPEG-encoded representation of the input frame.</returns>
-    private static byte[] ConvertFrameToByteArray(Mat frame, int quality = 70)
+    protected virtual async Task<byte[]> RunInference(byte[] imageByteArray)
+    {
+        // TODO: circuitbreaker pattern when api is not available
+        return await _objectDetectionApiClient.DetectObjectsAsync(imageByteArray);
+    }
+
+    // This is expensive wtf
+    protected virtual bool MotionDetected(Mat frame, Mat fgMask, BackgroundSubtractorMOG2 subtractor)
+    {
+        // Downscale frame for faster processing
+        var downscaleFactor = 16; // Downscale by a factor of 16
+
+        using var smallFrame = new Mat();
+        CvInvoke.Resize(frame, smallFrame, new System.Drawing.Size(frame.Width / downscaleFactor, frame.Height / downscaleFactor), interpolation: Inter.Linear);
+
+        subtractor.Apply(smallFrame, fgMask);
+
+        int motionPixels = CvInvoke.CountNonZero(fgMask);
+        // Adjust threshold for smaller frame
+        if (motionPixels > 4000 / (downscaleFactor ^ 2)) // 1/256th of original area
+        {
+            _logger.LogInformation("Motion detected in frame with {motionPixels} pixels at {timeStamp}", motionPixels, DateTime.Now);
+            return true;
+        }
+        return false;
+    }
+
+    protected virtual byte[] ConvertFrameToByteArray(Mat frame, int quality = 70)
     {
         // Encode the Mat to JPEG directly into a byte array
         var imageBytes = frame.ToImage<Bgr, byte>().ToJpegData(quality);
         return imageBytes;
     }
 
-    /// <summary>
-    /// Determines whether the camera is ready for capturing frames.
-    /// </summary>
-    /// <returns><see langword="true"/> if the camera is initialized and open for capturing; otherwise, <see langword="false"/>.</returns>
-    private bool CamReady()
+    protected virtual async Task SendFrameToClientsAsync(byte[] imageByteArray, CancellationToken token)
     {
-        return _capture != null && _capture.IsOpened;
+        await _hubContext.Clients.Group(GroupName).SendAsync("ReceiveImgBytes", imageByteArray, token);
     }
 
-    [Obsolete("Use other more efficient method instead")]
-    private static byte[] ConvertFrameToByteArray(Mat frame, string imageTempFile)
+    public void Dispose()
     {
-        // Create a memory stream to hold the image data
-        using var ms = new MemoryStream();
-        // Save the frame as a temporary image (in JPEG format)
-        CvInvoke.Imwrite(imageTempFile, frame);
-
-        // Now load it back into the memory stream
-        byte[] imageBytes = File.ReadAllBytes(imageTempFile);
-        ms.Write(imageBytes, 0, imageBytes.Length);
-
-        // Return the byte array of the image
-        return ms.ToArray();
+        GC.SuppressFinalize(this);
+        _isRunning = false;
+        _capture?.Dispose();
     }
 }
 
-/// <summary>
-/// Represents configuration options for a camera worker.
-/// </summary>
-/// <remarks>This class is used to specify the settings for initializing and configuring a camera worker,
-/// including the camera to be used and whether motion detection should be enabled.</remarks>
 public class CameraWorkerOptions
 {
     public required int CameraId { get; set; }
+    public required bool UseContinuousInference { get; set; } = false;
     public required bool UseMotionDetection { get; set; } = false;
+    public required CameraOptions CameraOptions { get; set; }
+}
+
+public class CameraOptions
+{
+    public required CameraResolution Resolution { get; set; }
+    public required int Framerate { get; set; }
 }

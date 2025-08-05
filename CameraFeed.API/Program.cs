@@ -1,4 +1,4 @@
-using CameraFeed.API.ApiClients;
+using CameraFeed.API.Services;
 using CameraFeed.API.Video;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
@@ -10,9 +10,12 @@ builder.Services.AddSignalR();
 builder.Services.AddHttpClient();
 
 //DI
-builder.Services.AddSingleton<IHumanDetectionApiClient, HumanDetectionApiClient>(); //TODO: maybe create a client per worker instead of singleton (without DI)
+//builder.Services.AddSingleton<IHumanDetectionClient, HumanDetectionClient>();
+builder.Services.AddSingleton<IObjectDetectionApiClient, ObjectDetectionApiClient>(); //TODO: maybe create a client per worker instead of singleton (without DI)
 builder.Services.AddSingleton<ICameraWorkerManager, CameraWorkerManager>();
 builder.Services.AddSingleton<ICameraWorkerFactory, CameraWorkerFactory>();
+builder.Services.AddSingleton<IVideoCaptureFactory, VideoCaptureFactory>();
+builder.Services.AddSingleton<IBackgroundSubtractorFactory, BackgroundSubtractorFactory>();
 
 builder.WebHost.UseKestrel();
 

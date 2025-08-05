@@ -4,28 +4,52 @@ app.component('video-feed', {
     props: {
         cameraId: String,
         hubUrl: String,
+        //width: [String, Number],
+        //height: [String, Number],
     },
     template: `
-        <div>
-            <h3>Camera: {{ cameraId }}</h3>
-            <canvas :ref="cameraId" width="800" height="600"></canvas>
+        <div class="cambox">
+            <h3>Camera {{ cameraId }}</h3>
+            <canvas :ref="cameraId" width="1280" height="720"></canvas>
         </div>
     `,
     mounted() {
+        //:width="width" :height="height"
         const canvas = this.$refs[this.cameraId];
         const ctx = canvas.getContext('2d');
+        const img = new Image(); // Reuse a single Image instance to prevent memory leaks
+
+        let latestData = null;
+        let loading = false;
+
+        img.onload = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            loading = false;
+
+            // If a new frame arrived while loading, display it now
+            if (latestData) {
+                const nextData = latestData;
+                latestData = null;
+                this.displayFrame(nextData, img);
+            }
+        };
+
+        this.displayFrame = (data, imageObj) => {
+            if (loading) {
+                latestData = data;
+                return;
+            }
+            loading = true;
+            imageObj.src = "data:image/jpeg;base64," + data;
+        };
 
         const connection = new signalR.HubConnectionBuilder()
             .withUrl(this.hubUrl)
             .build();
 
         connection.on("ReceiveImgBytes", data => {
-            const img = new Image();
-            img.onload = () => {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0);
-            };
-            img.src = "data:image/jpeg;base64," + data;
+            this.displayFrame(data, img);
         });
 
         connection
