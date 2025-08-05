@@ -16,8 +16,8 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<ICameraApiClient, CameraApiClient>();
 builder.Services.AddSingleton<IAllowedUsersService, AllowedUsersService>();
 
-//builder.WebHost.UseKestrel();
-builder.WebHost.UseIISIntegration(); //Absolutely necessary for deployment as an Azure App Service
+builder.WebHost.UseKestrel();
+//builder.WebHost.UseIISIntegration(); //Absolutely necessary for deployment as an Azure App Service
 
 builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();

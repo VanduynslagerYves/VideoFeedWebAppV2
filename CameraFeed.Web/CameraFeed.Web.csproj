@@ -14,5 +14,6 @@
 
 	<ItemGroup>
 	  <Folder Include="wwwroot\images\" />
+	  <Folder Include="wwwroot\audio\" />
 	</ItemGroup>
 </Project>

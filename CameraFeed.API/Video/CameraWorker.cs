@@ -14,10 +14,10 @@ public interface ICameraWorker
 }
 
 public abstract class CameraWorkerBase(CameraWorkerOptions options,
-    IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionApiClient humanDetectionApiClient,
+    IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionApiClient objectDetectionApiClient,
     IHubContext<CameraHub> hubContext) : ICameraWorker
 {
-    protected readonly IObjectDetectionApiClient _humanDetectionApiClient = humanDetectionApiClient;
+    protected readonly IObjectDetectionApiClient _objectDetectionApiClient = objectDetectionApiClient;
     protected readonly IHubContext<CameraHub> _hubContext = hubContext;
     protected readonly IVideoCaptureFactory _videoCaptureFactory = videoCaptureFactory;
     protected readonly IBackgroundSubtractorFactory _backgroundSubtractorFactory = backgroundSubtractorFactory;
@@ -96,7 +96,7 @@ public class CameraWorker(CameraWorkerOptions options,
     protected virtual async Task<byte[]> RunInference(byte[] imageByteArray)
     {
         // TODO: circuitbreaker pattern when api is not available
-        return await _humanDetectionApiClient.DetectObjectsAsync(imageByteArray);
+        return await _objectDetectionApiClient.DetectObjectsAsync(imageByteArray);
     }
 
     // This is expensive wtf
