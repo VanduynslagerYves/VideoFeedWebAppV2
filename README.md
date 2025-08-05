@@ -121,6 +121,6 @@ start_ngrok_api.cmd
 ---
 
 ## License
-See [CameraFeed.Web/wwwroot/lib/bootstrap/LICENSE](CameraFeed.Web/wwwroot/lib/bootstrap/LICENSE) for Bootstrap license. Other code is under your project’s license.
+See [CameraFeed.Web/wwwroot/lib/bootstrap/LICENSE](CameraFeed.Web/wwwroot/lib/bootstrap/LICENSE) for Bootstrap license.
 
 ---
