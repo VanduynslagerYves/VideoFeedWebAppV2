@@ -2,15 +2,17 @@
 using CameraFeed.API.Video;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace CameraFeed.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class CameraController(ICameraWorkerManager cameraWorkerManager, ILogger<CameraController> logger) : ControllerBase
+public class CameraController(ICameraWorkerManager cameraWorkerManager, IHubContext<CameraHub> hubContext, ILogger<CameraController> logger) : ControllerBase
 {
     // Injected as singleton
     private readonly ICameraWorkerManager _cameraWorkerManager = cameraWorkerManager;
+    private readonly IHubContext<CameraHub> _hubContext = hubContext;
     private readonly ILogger<CameraController> _logger = logger;
 
     [Authorize]
@@ -60,6 +62,18 @@ public class CameraController(ICameraWorkerManager cameraWorkerManager, ILogger<
         return CameraOperationResultFactory.Create(cameraId, ResponseMessages.CameraStartFailed);
     }
 
+    [AllowAnonymous]
+    [HttpPost("person-detected")]
+    public async Task<IActionResult> PersonDetected([FromBody] PersonDetectedDto dto)
+    {
+        var NotifyHumanDetectedGroup = $"camera_{dto.CameraId}_human_detected";
+
+        //Do stuff
+        //await _hubContext.Clients.Group(NotifyHumanDetectedGroup).SendAsync("HumanDetected", dto.CameraId.ToString());
+
+        return Ok();
+    }
+
     [Authorize]
     [HttpPost("stopcam/{cameraId}")]
     public async Task<IActionResult> StopCamera(int cameraId)
@@ -84,4 +98,9 @@ public class CameraController(ICameraWorkerManager cameraWorkerManager, ILogger<
         //TODO: Use BadRequest instead of NotFound to indicate that the camera ID is invalid
         return NotFound(new { success = false, cameraId, message = "Camera not found." }); //TODO: Return DTO's
     }
+}
+
+public class PersonDetectedDto
+{
+    public required string CameraId { get; set; }
 }

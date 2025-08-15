@@ -105,6 +105,18 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+//app.Use(async (context, next) =>
+//{
+//    context.Response.Headers.ContentSecurityPolicy =
+//        "default-src 'self'; " +
+//        "media-src 'self' https://localhost:7006/audio/human_detected.wav; " +
+//        "script-src 'self' https://unpkg.com https://cdnjs.cloudflare.com 'unsafe-eval'; " +
+//        "style-src 'self' 'unsafe-inline'; " +
+//        "img-src 'self' data: blob:; " +
+//        "connect-src *;";
+//    await next();
+//});
+
 //app.UseHttpsRedirection();
 app.UseRouting();
 

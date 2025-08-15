@@ -13,6 +13,9 @@ app.component('video-feed', {
             <canvas :ref="cameraId" width="1280" height="720"></canvas>
         </div>
     `,
+
+    //< audio : ref = "'audio_' + cameraId" src = "/audio/human_detected.wav" ></audio >
+
     mounted() {
         //:width="width" :height="height"
         const canvas = this.$refs[this.cameraId];
@@ -52,10 +55,24 @@ app.component('video-feed', {
             this.displayFrame(data, img);
         });
 
+        // Listen for person detection event
+        //connection.on("HumanDetected", (cameraId) => {
+        //    if (cameraId === this.cameraId) {
+        //        const audio = this.$refs['audio_' + cameraId];
+        //        if (audio) {
+        //            audio.currentTime = 0;
+        //            audio.play();
+        //        }
+        //    }
+        //});
+
         connection
             .start()
             .then(() => {
-                return connection.invoke("JoinGroup", `camera_${this.cameraId}`);
+                //connection.invoke("JoinGroup", `camera_${this.cameraId}_human_detected`);
+                connection.invoke("JoinGroup", `camera_${this.cameraId}`);
+                return
+
             })
             .catch(err => console.error("SignalR Error:", err.toString()));
     }

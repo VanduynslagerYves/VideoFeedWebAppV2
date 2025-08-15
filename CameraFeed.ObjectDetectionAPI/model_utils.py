@@ -20,9 +20,9 @@ def load_model(model_path: str, device: str):
     # Explicitly set the device (redundant with .to(), but ensures correct context)
     model.cuda() if device == "cuda" else model.cpu()
     # Convert model parameters to half-precision for faster inference (if supported)
-    model.half()
+    #model.half()
     # Fuse model layers for improved inference speed
-    model.fuse()
+    #model.fuse()
 
     return model
 

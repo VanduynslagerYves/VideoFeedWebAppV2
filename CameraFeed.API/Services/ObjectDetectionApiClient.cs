@@ -4,7 +4,7 @@ namespace CameraFeed.API.Services;
 
 public interface IObjectDetectionApiClient
 {
-    Task<byte[]> DetectObjectsAsync(byte[] imageData);
+    Task<byte[]> DetectObjectsAsync(byte[] imageData, string cameraId);
 }
 
 public abstract class ObjectDetectionApiClientBase(IHttpClientFactory httpClientFactory) : IObjectDetectionApiClient
@@ -12,7 +12,7 @@ public abstract class ObjectDetectionApiClientBase(IHttpClientFactory httpClient
     protected readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     protected readonly HttpClient _httpClient = httpClientFactory.CreateClient("HumanDetectionApi");
 
-    public abstract Task<byte[]> DetectObjectsAsync(byte[] imageData);
+    public abstract Task<byte[]> DetectObjectsAsync(byte[] imageData, string cameraId);
 }
 
 public class ObjectDetectionApiClient(IHttpClientFactory httpClientFactory, ILogger<ObjectDetectionApiClient> logger) : ObjectDetectionApiClientBase(httpClientFactory)
@@ -21,7 +21,7 @@ public class ObjectDetectionApiClient(IHttpClientFactory httpClientFactory, ILog
     private bool _apiAvailable = true;
     private int _requestCounter = 0;
 
-    public override async Task<byte[]> DetectObjectsAsync(byte[] imageData)
+    public override async Task<byte[]> DetectObjectsAsync(byte[] imageData, string cameraId)
     {
         _requestCounter++; //TODO: use a healthcheck endpoint with a timer
         if(!_apiAvailable && _requestCounter <= 300) //after 300 frames
@@ -31,12 +31,17 @@ public class ObjectDetectionApiClient(IHttpClientFactory httpClientFactory, ILog
         }
 
         _requestCounter = 0;
-        using var content = new ByteArrayContent(imageData);
-        content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "http://127.0.0.1:8000/detect-objects/")
+        {
+            Content = new ByteArrayContent(imageData)
+        };
+        request.Headers.Add("X-Camera-Id", cameraId);
+        request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
 
         try
         {
-            var response = await _httpClient.PostAsync("http://127.0.0.1:8000/detect-objects/", content);
+            var response = await _httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
             _apiAvailable = true;

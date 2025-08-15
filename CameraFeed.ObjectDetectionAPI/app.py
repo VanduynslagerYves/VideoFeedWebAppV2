@@ -6,6 +6,7 @@ from fastapi.responses import Response
 from PIL import Image, ImageDraw
 from io import BytesIO
 from model_utils import load_model, get_device # Utility functions for model/device
+import requests  # For making HTTP requests to the backend service
 
 # Initialize FastAPI application
 app = FastAPI()
@@ -15,7 +16,7 @@ DEVICE = get_device()
 print(f"Inference with {DEVICE}")
 
 # Load the YOLO model onto the selected device
-model = load_model("yolov8n.pt", DEVICE)
+model = load_model("yolov8l.pt", DEVICE)
 
 # Create a thread pool executor to handle concurrent inference requests
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
@@ -26,6 +27,9 @@ async def detect_objects(request: Request):
     Receives an image via POST request, runs YOLO inference to detect persons and cars,
     draws bounding boxes, and returns the processed image as a JPEG byte stream.
     """
+
+    camera_id = request.headers.get("x-camera-id")
+
     # Read the raw bytes from the request body
     contents = await request.body()
     # Open the image and ensure it's in RGB format
@@ -39,8 +43,11 @@ async def detect_objects(request: Request):
         executor,
         lambda: model.predict(
             img_np,
-            classes=[0, 2])  # Only detect 'person' (class 0) and 'car' (class 2)
+            classes=[0, 2, 3])  # Only detect 'person' (class 0) and 'car' (class 2)
     )
+
+    # person_detected = False
+    # car_detected = False
 
     # Draw bounding boxes for detected persons and cars
     draw = ImageDraw.Draw(img)
@@ -51,8 +58,21 @@ async def detect_objects(request: Request):
             bbox = box.xyxy[0].tolist()
             if label == "person":
                 draw.rectangle(bbox, outline="green", width=3)
+                # person_detected = True
             elif label == "car":
+                # person_detected = True
                 draw.rectangle(bbox, outline="blue", width=3)
+            elif label == "motorcycle":
+                draw.rectangle(bbox, outline="yellow", width=3)
+    # Notify backend if a person was detected
+    # if person_detected:
+    #     try:
+    #         requests.post(
+    #             "https://localhost:7214/api/camera/person-detected/",
+    #             json={"CameraId": camera_id}
+    #         )
+    #     except Exception as e:
+    #         print(f"Failed to notify backend: {e}")
 
     # Save the processed image to a buffer as JPEG
     buf = BytesIO()

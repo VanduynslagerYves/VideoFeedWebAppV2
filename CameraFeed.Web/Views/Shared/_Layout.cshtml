@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    @* <meta http-equiv="Content-Security-Policy" content="media-src 'self';"> *@
     <title>@ViewData["Title"] - VideoFeed</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -49,9 +50,6 @@
         <div>
             &copy; 2025 - VideoFeed - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
-@*         <div id="cudalogo">
-            <img src="~/images/cuda.png" />
-        </div> *@
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

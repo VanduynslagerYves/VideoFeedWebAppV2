@@ -31,7 +31,7 @@ public abstract class CameraWorkerBase(CameraWorkerOptions options,
     public int CameraId { get; } = options.CameraId;
 
     protected string WorkerId => $"Worker {CameraId}";
-    protected string GroupName => $"camera_{CameraId}";
+    protected string NotifyImageGroup => $"camera_{CameraId}";
 
     protected VideoCapture? _capture;
 
@@ -96,7 +96,7 @@ public class CameraWorker(CameraWorkerOptions options,
     protected virtual async Task<byte[]> RunInference(byte[] imageByteArray)
     {
         // TODO: circuitbreaker pattern when api is not available
-        return await _objectDetectionApiClient.DetectObjectsAsync(imageByteArray);
+        return await _objectDetectionApiClient.DetectObjectsAsync(imageByteArray, $"{CameraId}");
     }
 
     // This is expensive wtf
@@ -129,7 +129,7 @@ public class CameraWorker(CameraWorkerOptions options,
 
     protected virtual async Task SendFrameToClientsAsync(byte[] imageByteArray, CancellationToken token)
     {
-        await _hubContext.Clients.Group(GroupName).SendAsync("ReceiveImgBytes", imageByteArray, token);
+        await _hubContext.Clients.Group(NotifyImageGroup).SendAsync("ReceiveImgBytes", imageByteArray, token);
     }
 
     public void Dispose()
