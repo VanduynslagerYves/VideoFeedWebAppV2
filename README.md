@@ -10,10 +10,10 @@ This repository contains a multi-component system for video feed processing, obj
 ## Prerequisites
 
 - **.NET 9 SDK** (latest STS version)
-- **Python 3.9+** (recommended: 3.10 or 3.11)
+- **Python 3.10+**
 - **Node.js** (if modifying frontend assets)
 - **ngrok** (optional, for public tunneling)
-- **NVIDIA GPU + CUDA Toolkit** (for GPU-accelerated detection, optional)
+- **NVIDIA GPU + CUDA Toolkit 12.1 or up** (for GPU-accelerated detection)
 
 ---
 
@@ -54,41 +54,14 @@ dotnet run
 
 ## 3. CameraFeed.ObjectDetectionAPI (Python FastAPI)
 
-### Python Environment
+### Python Environment (3.10)
 ```sh
 cd CameraFeed.ObjectDetectionAPI
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-## Python 3.10
-- Required for building TensorRT models (using create_tensor_model.py). Later python versions are not yet supported by ONNX (which is needed by TensorRT)
-  - Install Ultralytics for Python 3.10
-  ```sh
-  py -3.10 -m pip install ultralytics
-  ```
-  - Uninstall Torch CPU only
-  ```sh
-  - py -3.10 -m pip uninstall torch torchvision torchaudio
-  ```
-  - Install Torch for 3.10 with GPU support (choose the version matching your CUDA, here 12.9)
-  ```sh
-  py -3.10 -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu129
-  ```
-  - Install ONNX for 3.10
-  ```sh
-  py -3.10 -m pip install "onnx>=1.12.0,<1.18.0" onnxslim>=0.1.59 onnxruntime-gpu
-  ```
-  - Install TensorRT
-  - Go to the [NVIDIA TensorRT GitHub page](https://github.com/NVIDIA/TensorRT?tab=readme-ov-file)
-  - Download the TensorRT zip package for Windows
-  - Extract the zip file (e.g., to C:\tools\TensorRT-10.13.0.35)
-  ```sh
-  cd C:\tools\TensorRT-10.13.0.35
-  py -3.10 -m pip install tensorrt_rtx-1.1.1.26-cp310-none-win_amd64.whl
-  ```
-  - Add the extracted folder to your system PATH
+``` 
 
-### Install Dependencies for regular Python version (3.13 for example)
+### Install Dependencies
 ```sh
 pip install -r requirements.txt
 ```
@@ -101,14 +74,24 @@ pip install -r requirements.txt
     ```sh
     pip uninstall torch torchvision torchaudio
     ```
-    Install gpu capable torch
+    Install gpu capable torch (CUDA 12.1 is latest supported for PyTorch, but also works with CUDA 12.9)
     ```sh
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu129
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
     ```
-- For **CPU only (not recommended)**:
-    ```sh
-    pip install torch torchvision torchaudio
-    ```
+### ONNX (needed for TensorRT)
+  ```sh
+  pip install "onnx>=1.12.0,<1.18.0" onnxslim>=0.1.59 onnxruntime-gpu
+  ```
+
+### Nvidia TensorRT
+  - Go to the [NVIDIA TensorRT GitHub page](https://github.com/NVIDIA/TensorRT?tab=readme-ov-file)
+  - Download the TensorRT zip package for Windows
+  - Extract the zip file (e.g., to C:\tools\TensorRT-10.13.0.35)
+  ```sh
+  cd C:\tools\TensorRT-10.13.0.35
+  py -3.10 -m pip install tensorrt_rtx-1.1.1.26-cp310-none-win_amd64.whl
+  ```
+  - Add the extracted folder to your system PATH
 
 ### Run the API
 ```sh
