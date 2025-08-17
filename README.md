@@ -4,7 +4,6 @@ This repository contains a multi-component system for video feed processing, obj
 - **CameraFeed.Web**: Razor Pages web frontend (.NET 9)
 - **CameraFeed.API**: .NET 9 backend API for video and object detection
 - **CameraFeed.ObjectDetectionAPI**: Python FastAPI service for human detection using YOLO (PyTorch)
-
 ---
 
 ## Prerequisites
@@ -14,14 +13,13 @@ This repository contains a multi-component system for video feed processing, obj
 - **Node.js** (if modifying frontend assets)
 - **ngrok** (optional, for public tunneling)
 - **NVIDIA GPU + CUDA Toolkit 12.1 or up** (for GPU-accelerated detection)
-
 ---
 
 ## 1. CameraFeed.Web (Frontend)
 
 ### Install .NET SDK (Linux example)
 ```sh
-curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel STS --runtime dotnet
+curl -ssL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel STS --runtime dotnet
 echo 'export DOTNET_ROOT=$HOME/.dotnet' >> ~/.bashrc
 echo 'export PATH=$PATH:$HOME/.dotnet' >> ~/.bashrc
 source ~/.bashrc
@@ -36,7 +34,6 @@ dotnet run --urls "https://0.0.0.0:7006"
 
 - The app will be available at https://localhost:7006
 - For local debugging, set the environment variable `ASPNETCORE_ENVIRONMENT=Development`.
-
 ---
 
 ## 2. CameraFeed.API (Backend API)
@@ -60,15 +57,12 @@ cd CameraFeed.ObjectDetectionAPI
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ``` 
-
 ---
 
----
 ### Install Dependencies
 ```sh
 pip install -r requirements.txt
 ```
-
 ---
 
 ### PyTorch & CUDA
@@ -82,14 +76,12 @@ pip uninstall torch torchvision torchaudio
 ```sh
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 ```
-
 ---
 
 ### ONNX (needed for TensorRT)
 ```sh
 pip install "onnx>=1.12.0,<1.18.0" onnxslim>=0.1.59 onnxruntime-gpu
 ```
-
 ---
 
 ### Nvidia TensorRT
@@ -101,7 +93,6 @@ cd C:\tools\TensorRT-10.13.0.35
 py -3.10 -m pip install tensorrt_rtx-1.1.1.26-cp310-none-win_amd64.whl
 ```
 - Add the extracted folder to your system PATH
-
 ---
 
 ### Run the API
@@ -112,12 +103,12 @@ Or use the provided script:
 ```sh
 launch.cmd
 ```
+---
 
 ### Test the API
 ```sh
 curl -X POST "http://127.0.0.1:8000/detect-objects/" --data-binary @test.jpeg --output result.jpeg
 ```
-
 ---
 
 ## 5. ngrok (Optional, for public tunneling)
@@ -128,14 +119,12 @@ ngrok http 7006
 cd CameraFeed.Web/ngrok-config
 start_ngrok_api.cmd
 ```
-
 ---
 
 ## 6. Auth0 Setup
 - Set up callback URLs in your Auth0 dashboard to match your local and deployed URLs.
 - For local debugging, ensure Auth0 allows `https://localhost:7006/signin-oidc` as a callback.
 - Authentication settings are read from environment variables or `appsettings.json`.
-
 ---
 
 ## Troubleshooting
@@ -143,10 +132,8 @@ start_ngrok_api.cmd
 - **Authentication issues**: Double-check Auth0 settings and callback URLs.
 - **Port conflicts**: Make sure the ports used by each service are available.
 - **Development mode**: Set `ASPNETCORE_ENVIRONMENT=Development` for detailed error messages.
-
 ---
 
 ## License
 See [CameraFeed.Web/wwwroot/lib/bootstrap/LICENSE](CameraFeed.Web/wwwroot/lib/bootstrap/LICENSE) for Bootstrap license.
-
 ---
