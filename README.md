@@ -60,8 +60,35 @@ cd CameraFeed.ObjectDetectionAPI
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
+## Python 3.10
+- Required for building TensorRT models (using create_tensor_model.py). Later python versions are not yet supported by ONNX (which is needed by TensorRT)
+  - Install Ultralytics for Python 3.10
+  ```sh
+  py -3.10 -m pip install ultralytics
+  ```
+  - Uninstall Torch CPU only
+  ```sh
+  - py -3.10 -m pip uninstall torch torchvision torchaudio
+  ```
+  - Install Torch for 3.10 with GPU support (choose the version matching your CUDA, here 12.9)
+  ```sh
+  py -3.10 -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu129
+  ```
+  - Install ONNX for 3.10
+  ```sh
+  py -3.10 -m pip install "onnx>=1.12.0,<1.18.0" onnxslim>=0.1.59 onnxruntime-gpu
+  ```
+  - Install TensorRT
+  - Go to the [NVIDIA TensorRT GitHub page](https://github.com/NVIDIA/TensorRT?tab=readme-ov-file)
+  - Download the TensorRT zip package for Windows
+  - Extract the zip file (e.g., to C:\tools\TensorRT-10.13.0.35)
+  ```sh
+  cd C:\tools\TensorRT-10.13.0.35
+  py -3.10 -m pip install tensorrt_rtx-1.1.1.26-cp310-none-win_amd64.whl
+  ```
+  - Add the extracted folder to your system PATH
 
-### Install Dependencies
+### Install Dependencies for regular Python version (3.13 for example)
 ```sh
 pip install -r requirements.txt
 ```
@@ -69,9 +96,14 @@ pip install -r requirements.txt
 ### PyTorch & CUDA
 - For **GPU acceleration**, install CUDA toolkit and install the correct PyTorch version for your CUDA toolkit:
   - [PyTorch Get Started](https://pytorch.org/get-started/locally/)
-  - Example (CUDA 12.1):
+  - Example (CUDA 12.9):
+    Uninstall cpu only torch
     ```sh
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+    pip uninstall torch torchvision torchaudio
+    ```
+    Install gpu capable torch
+    ```sh
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu129
     ```
 - For **CPU only (not recommended)**:
     ```sh
