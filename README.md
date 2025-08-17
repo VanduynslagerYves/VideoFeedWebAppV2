@@ -61,37 +61,48 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ``` 
 
+---
+
+---
 ### Install Dependencies
 ```sh
 pip install -r requirements.txt
 ```
 
+---
+
 ### PyTorch & CUDA
-- For **GPU acceleration**, install CUDA toolkit and install the correct PyTorch version for your CUDA toolkit:
-  - [PyTorch Get Started](https://pytorch.org/get-started/locally/)
-  - Example (CUDA 12.9):
-    Uninstall cpu only torch
-    ```sh
-    pip uninstall torch torchvision torchaudio
-    ```
-    Install gpu capable torch (CUDA 12.1 is latest supported for PyTorch, but also works with CUDA 12.9)
-    ```sh
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-    ```
+For **GPU acceleration**, install CUDA toolkit and install the correct PyTorch version for your CUDA toolkit:
+[PyTorch Get Started](https://pytorch.org/get-started/locally/)
+- Uninstall cpu only torch
+```sh
+pip uninstall torch torchvision torchaudio
+```
+- Install gpu capable torch (CUDA 12.1 is latest supported for PyTorch, but also works with CUDA 12.9)
+```sh
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+```
+
+---
+
 ### ONNX (needed for TensorRT)
-  ```sh
-  pip install "onnx>=1.12.0,<1.18.0" onnxslim>=0.1.59 onnxruntime-gpu
-  ```
+```sh
+pip install "onnx>=1.12.0,<1.18.0" onnxslim>=0.1.59 onnxruntime-gpu
+```
+
+---
 
 ### Nvidia TensorRT
-  - Go to the [NVIDIA TensorRT GitHub page](https://github.com/NVIDIA/TensorRT?tab=readme-ov-file)
-  - Download the TensorRT zip package for Windows
-  - Extract the zip file (e.g., to C:\tools\TensorRT-10.13.0.35)
-  ```sh
-  cd C:\tools\TensorRT-10.13.0.35
-  py -3.10 -m pip install tensorrt_rtx-1.1.1.26-cp310-none-win_amd64.whl
-  ```
-  - Add the extracted folder to your system PATH
+- Go to the [NVIDIA TensorRT GitHub page](https://github.com/NVIDIA/TensorRT?tab=readme-ov-file)
+- Download the TensorRT zip package for Windows
+- Extract the zip file (e.g., to C:\tools\TensorRT-10.13.0.35)
+```sh
+cd C:\tools\TensorRT-10.13.0.35
+py -3.10 -m pip install tensorrt_rtx-1.1.1.26-cp310-none-win_amd64.whl
+```
+- Add the extracted folder to your system PATH
+
+---
 
 ### Run the API
 ```sh
