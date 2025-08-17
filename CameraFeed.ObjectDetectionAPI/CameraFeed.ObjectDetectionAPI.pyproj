@@ -10,8 +10,7 @@
     <OutputPath>.</OutputPath>
     <Name>CameraFeed.HumanDetectionAPI</Name>
     <RootNamespace>CameraFeed.HumanDetectionAPI</RootNamespace>
-    <InterpreterId>
-    </InterpreterId>
+    <InterpreterId>Global|PythonCore|3.10</InterpreterId>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <CommandLineArguments>
@@ -44,6 +43,9 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="util\" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterpreterReference Include="Global|PythonCore|3.10" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
