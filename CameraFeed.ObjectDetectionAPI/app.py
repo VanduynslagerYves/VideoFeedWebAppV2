@@ -16,7 +16,7 @@ DEVICE = get_device()
 print(f"Inference with {DEVICE}")
 
 # Load the YOLO model onto the selected device
-model = load_model("yolov8l.pt", DEVICE)
+model = load_model("yolov8s.pt", DEVICE)
 
 # Create a thread pool executor to handle concurrent inference requests
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
@@ -57,13 +57,13 @@ async def detect_objects(request: Request):
             label = model.names[class_id].lower()
             bbox = box.xyxy[0].tolist()
             if label == "person":
-                draw.rectangle(bbox, outline="green", width=3)
+                draw.rectangle(bbox, outline="green", width=2)
                 # person_detected = True
             elif label == "car":
                 # person_detected = True
-                draw.rectangle(bbox, outline="blue", width=3)
+                draw.rectangle(bbox, outline="blue", width=2)
             elif label == "motorcycle":
-                draw.rectangle(bbox, outline="yellow", width=3)
+                draw.rectangle(bbox, outline="yellow", width=2)
     # Notify backend if a person was detected
     # if person_detected:
     #     try:
@@ -80,6 +80,9 @@ async def detect_objects(request: Request):
     buf.seek(0)
     # Return the image bytes as a binary response
     return Response(content=buf.getvalue(), media_type="application/octet-stream")
+
+
+
 
 #-----------------------------------------------
 # The commented section below is an alternative gRPC-based implementation for human detection.
