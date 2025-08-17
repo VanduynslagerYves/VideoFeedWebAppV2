@@ -33,6 +33,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="app.py" />
+    <Compile Include="util\create_tensor_model.py" />
     <Compile Include="model_utils.py" />
     <Compile Include="yolo_labels.py" />
   </ItemGroup>
@@ -40,7 +41,9 @@
     <Content Include="human_detection.proto" />
     <Content Include="launch.cmd" />
     <Content Include="requirements.txt" />
-    <Content Include="test.cmd" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="util\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
