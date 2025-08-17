@@ -21,6 +21,7 @@
     <InterpreterArguments>
     </InterpreterArguments>
     <IsWindowsApplication>False</IsWindowsApplication>
+    <SuppressEnvironmentCreationPrompt>True</SuppressEnvironmentCreationPrompt>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
