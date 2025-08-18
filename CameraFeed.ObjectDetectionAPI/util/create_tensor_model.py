@@ -1,4 +1,4 @@
-#use this script to create a TensorRT model from a YOLOv8 model (Run this with Python 3.10 only,
+# Use this script to create a TensorRT model from a YOLOv8 model (Run this with Python 3.10 only,
 # TensorRT required ONNX and is only supported on 3.10 at the moment of writing)
 
 # Ensure you have the required packages installed:
