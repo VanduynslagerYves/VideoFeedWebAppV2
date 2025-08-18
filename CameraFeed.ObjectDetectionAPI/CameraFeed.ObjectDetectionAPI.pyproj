@@ -37,7 +37,7 @@
     <Compile Include="yolo_labels.py" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="human_detection.proto" />
+    <Content Include="object_detection.proto" />
     <Content Include="launch.cmd" />
     <Content Include="requirements.txt" />
   </ItemGroup>

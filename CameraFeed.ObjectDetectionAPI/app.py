@@ -1,41 +1,17 @@
 import numpy as np
-import asyncio
 import concurrent.futures
-from fastapi import FastAPI, Request
-from fastapi.responses import Response
+from concurrent import futures
 from PIL import Image, ImageDraw
 from io import BytesIO
 from model_utils import load_trt_model
-
-app = FastAPI()
+import grpc
+import object_detection_pb2
+import object_detection_pb2_grpc
 
 # Load the YOLO TensorRT engine
 model = load_trt_model("yolov8s.engine")
 
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
-
-@app.post("/detect-objects/")
-async def detect_objects(request: Request):
-    #camera_id = request.headers.get("x-camera-id")
-    contents = await request.body()
-    img = Image.open(BytesIO(contents)).convert("RGB")
-    img_np = np.array(img)
-
-    loop = asyncio.get_event_loop()
-    results = await loop.run_in_executor(
-        executor,
-        lambda: model.predict(
-            img_np,
-            classes=[0, 2, 3]
-        )
-    )
-
-    draw_bounding_boxes(img, results, model)
-
-    buf = BytesIO()
-    img.save(buf, format="JPEG", quality=78)
-    buf.seek(0)
-    return Response(content=buf.getvalue(), media_type="application/octet-stream")
 
 def draw_bounding_boxes(img, results, model):
     """
@@ -53,9 +29,37 @@ def draw_bounding_boxes(img, results, model):
                 draw_rectangle(draw, bbox, "blue")
             elif label == "motorcycle":
                 draw_rectangle(draw, bbox, "yellow")
+            elif label == "bicycle":
+                draw_rectangle(draw, bbox, "orange")
 
 def draw_rectangle(draw, bbox, color):
     """
     Draws a rectangle on the image.
     """
     draw.rectangle(bbox, outline=color, width=2)
+
+class ObjectDetectionService(object_detection_pb2_grpc.ObjectDetectionServicer):
+    def DetectObjects(self, request_iterator, context):
+        for request in request_iterator:
+            img = Image.open(BytesIO(request.image_data)).convert("RGB")
+            img_np = np.array(img)
+            results = model.predict(
+                img_np,
+                classes=[0, 1, 2, 3]
+            )
+            draw_bounding_boxes(img, results, model)
+            buf = BytesIO()
+            img.save(buf, format="JPEG", quality=78)
+            buf.seek(0)
+            yield object_detection_pb2.ImageResponse(processed_image=buf.getvalue())
+
+def serve_grpc():
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
+    object_detection_pb2_grpc.add_ObjectDetectionServicer_to_server(ObjectDetectionService(), server)
+    server.add_insecure_port('[::]:50051')
+    server.start()
+    print("gRPC server started on port 50051")
+    server.wait_for_termination()
+
+if __name__ == "__main__":
+    serve_grpc()

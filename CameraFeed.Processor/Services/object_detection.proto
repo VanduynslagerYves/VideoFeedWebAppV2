@@ -1,0 +1,13 @@
+﻿syntax = "proto3";
+
+service ObjectDetection {
+  rpc DetectObjects (stream ImageRequest) returns (stream ImageResponse);
+}
+
+message ImageRequest {
+  bytes image_data = 1;
+}
+
+message ImageResponse {
+  bytes processed_image = 1;
+}
