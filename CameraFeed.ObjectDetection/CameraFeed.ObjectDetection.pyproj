@@ -3,13 +3,14 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>eb7dde57-15ce-4f6d-a27b-8ce0c61330e6</ProjectGuid>
-    <ProjectHome>.</ProjectHome>
+    <ProjectHome>
+    </ProjectHome>
     <StartupFile>app.py</StartupFile>
     <SearchPath>.</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
-    <Name>CameraFeed.HumanDetectionAPI</Name>
-    <RootNamespace>CameraFeed.HumanDetectionAPI</RootNamespace>
+    <Name>CameraFeed.ObjectDetection</Name>
+    <RootNamespace>CameraFeed.ObjectDetection</RootNamespace>
     <InterpreterId>Global|PythonCore|3.10</InterpreterId>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
