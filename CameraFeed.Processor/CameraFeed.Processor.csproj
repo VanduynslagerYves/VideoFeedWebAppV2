@@ -18,9 +18,10 @@
     </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.8" />
+    <PackageReference Include="Polly" Version="8.6.2" />
   </ItemGroup>
 
 	<ItemGroup>
-		<Protobuf Include="Services\object_detection.proto" GrpcServices="Client" />
+		<Protobuf Include="Services\gRPC\object_detection.proto" GrpcServices="Client" />
 	</ItemGroup>
 </Project>

@@ -2,7 +2,7 @@
 using Emgu.CV.Structure;
 using Emgu.CV.CvEnum;
 using Microsoft.AspNetCore.SignalR;
-using CameraFeed.Processor.Services;
+using CameraFeed.Processor.Services.gRPC;
 
 namespace CameraFeed.Processor.Video;
 
@@ -14,11 +14,10 @@ public interface ICameraWorker
 }
 
 public abstract class CameraWorkerBase(CameraWorkerOptions options,
-    IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionClient objectDetectioniClient,
+    IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectioniClient,
     IHubContext<CameraHub> hubContext) : ICameraWorker
 {
-    //protected readonly IObjectDetectionApiClient _objectDetectionApiClient = objectDetectionApiClient;
-    protected readonly IObjectDetectionClient _objectDetectionClient = objectDetectioniClient;
+    protected readonly IObjectDetectionGrpcClient _objectDetectionClient = objectDetectioniClient;
     protected readonly IHubContext<CameraHub> _hubContext = hubContext;
     protected readonly IVideoCaptureFactory _videoCaptureFactory = videoCaptureFactory;
     protected readonly IBackgroundSubtractorFactory _backgroundSubtractorFactory = backgroundSubtractorFactory;
@@ -40,7 +39,7 @@ public abstract class CameraWorkerBase(CameraWorkerOptions options,
 }
 
 public class CameraWorker(CameraWorkerOptions options,
-    IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionClient objectDetectionClient,
+    IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient,
     ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : CameraWorkerBase(options, videoCaptureFactory, backgroundSubtractorFactory, objectDetectionClient, hubContext), IDisposable
 {
     private readonly ILogger<CameraWorker> _logger = logger;
@@ -93,12 +92,6 @@ public class CameraWorker(CameraWorkerOptions options,
         _capture.Set(CapProp.Fps, _options.CameraOptions.Framerate);
         _capture.Set(CapProp.FourCC, VideoWriter.Fourcc('M', 'J', 'P', 'G')); // MJPEG if supported
     }
-
-    //protected virtual async Task<byte[]> RunInference(byte[] imageByteArray)
-    //{
-    //    // TODO: circuitbreaker pattern when api is not available
-    //    return await _objectDetectionApiClient.DetectObjectsAsync(imageByteArray, $"{CameraId}");
-    //}
 
     public virtual async Task<byte[]> RunInference(byte[] frameData, CancellationToken cancellationToken = default)
     {

@@ -1,4 +1,4 @@
-﻿using CameraFeed.API.DTO;
+﻿using CameraFeed.Processor.DTO;
 using CameraFeed.Processor.Video;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -62,17 +62,17 @@ public class CameraController(ICameraWorkerManager cameraWorkerManager, IHubCont
         return CameraOperationResultFactory.Create(cameraId, ResponseMessages.CameraStartFailed);
     }
 
-    [AllowAnonymous]
-    [HttpPost("person-detected")]
-    public async Task<IActionResult> PersonDetected([FromBody] PersonDetectedDto dto)
-    {
-        var NotifyHumanDetectedGroup = $"camera_{dto.CameraId}_human_detected";
+    //[AllowAnonymous]
+    //[HttpPost("person-detected")]
+    //public async Task<IActionResult> PersonDetected([FromBody] PersonDetectedDto dto)
+    //{
+    //    var NotifyHumanDetectedGroup = $"camera_{dto.CameraId}_human_detected";
 
-        //Do stuff
-        //await _hubContext.Clients.Group(NotifyHumanDetectedGroup).SendAsync("HumanDetected", dto.CameraId.ToString());
+    //    //Do stuff
+    //    //await _hubContext.Clients.Group(NotifyHumanDetectedGroup).SendAsync("HumanDetected", dto.CameraId.ToString());
 
-        return Ok();
-    }
+    //    return Ok();
+    //}
 
     [Authorize]
     [HttpPost("stopcam/{cameraId}")]

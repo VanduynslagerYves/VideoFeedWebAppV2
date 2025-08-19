@@ -1,4 +1,4 @@
-﻿using CameraFeed.Processor.Services;
+﻿using CameraFeed.Processor.Services.gRPC;
 using Emgu.CV;
 using Microsoft.AspNetCore.SignalR;
 
@@ -8,7 +8,7 @@ public interface ICameraWorkerFactory
     Task<ICameraWorker> CreateCameraWorkerAsync(CameraWorkerOptions options);
 }
 
-public class CameraWorkerFactory(ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionClient objectDetectionClient) : ICameraWorkerFactory
+public class CameraWorkerFactory(ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient) : ICameraWorkerFactory
 {
     public async Task<ICameraWorker> CreateCameraWorkerAsync(CameraWorkerOptions options)
     {

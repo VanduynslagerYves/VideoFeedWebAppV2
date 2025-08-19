@@ -1,13 +1,13 @@
 ﻿using System.Net.Http.Headers;
 
-namespace CameraFeed.Processor.Services;
+namespace CameraFeed.Processor.Services.HTTP;
 
-public interface IObjectDetectionApiClient
+public interface IObjectDetectionHttpClient
 {
     Task<byte[]> DetectObjectsAsync(byte[] imageData, string cameraId);
 }
 
-public abstract class ObjectDetectionApiClientBase(IHttpClientFactory httpClientFactory) : IObjectDetectionApiClient
+public abstract class ObjectDetectionHttpClientBase(IHttpClientFactory httpClientFactory) : IObjectDetectionHttpClient
 {
     protected readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     protected readonly HttpClient _httpClient = httpClientFactory.CreateClient("HumanDetectionApi");
@@ -15,9 +15,9 @@ public abstract class ObjectDetectionApiClientBase(IHttpClientFactory httpClient
     public abstract Task<byte[]> DetectObjectsAsync(byte[] imageData, string cameraId);
 }
 
-public class ObjectDetectionApiClient(IHttpClientFactory httpClientFactory, ILogger<ObjectDetectionApiClient> logger) : ObjectDetectionApiClientBase(httpClientFactory)
+public class ObjectDetectionHttpClient(IHttpClientFactory httpClientFactory, ILogger<ObjectDetectionHttpClient> logger) : ObjectDetectionHttpClientBase(httpClientFactory)
 {
-    private readonly ILogger<ObjectDetectionApiClient> _logger = logger;
+    private readonly ILogger<ObjectDetectionHttpClient> _logger = logger;
     private bool _apiAvailable = true;
     private int _requestCounter = 0;
 

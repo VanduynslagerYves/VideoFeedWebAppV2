@@ -1,4 +1,5 @@
-using CameraFeed.Processor.Services;
+using CameraFeed.Processor.Services.gRPC;
+using CameraFeed.Processor.Services.HTTP;
 using CameraFeed.Processor.Video;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
@@ -10,8 +11,8 @@ builder.Services.AddSignalR();
 builder.Services.AddHttpClient();
 
 //DI
-builder.Services.AddSingleton<IObjectDetectionClient, ObjectDetectionClient>();
-//builder.Services.AddSingleton<IObjectDetectionApiClient, ObjectDetectionApiClient>(); //TODO: maybe create a client per worker instead of singleton (without DI)
+builder.Services.AddSingleton<IObjectDetectionGrpcClient, ObjectDetectionGrpcClient>();
+builder.Services.AddSingleton<IObjectDetectionHttpClient, ObjectDetectionHttpClient>();
 builder.Services.AddSingleton<ICameraWorkerManager, CameraWorkerManager>();
 builder.Services.AddSingleton<ICameraWorkerFactory, CameraWorkerFactory>();
 builder.Services.AddSingleton<IVideoCaptureFactory, VideoCaptureFactory>();
@@ -34,7 +35,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 }).AddJwtBearer(options =>
 {
     options.Authority = "https://dev-i4c6oxzfwdlecakx.eu.auth0.com/"; //TODO: get from appsettings
