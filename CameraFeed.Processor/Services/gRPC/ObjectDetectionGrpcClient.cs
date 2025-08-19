@@ -1,7 +1,6 @@
 ﻿using Google.Protobuf;
 using Grpc.Net.Client;
 using Grpc.Core;
-
 using Polly.CircuitBreaker;
 
 namespace CameraFeed.Processor.Services.gRPC;
