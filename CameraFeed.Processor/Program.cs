@@ -22,14 +22,30 @@ builder.WebHost.UseKestrel();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowWeb", builder =>
+    options.AddPolicy("AllowWeb", policy =>
     {
-        builder.WithOrigins("https://katacam-g7fchjfvhucgf8gq.northeurope-01.azurewebsites.net", "https://localhost:7006", "https://localhost:44300","https://pure-current-mastodon.ngrok-free.app") //Move these to appsettings.json
+        policy.WithOrigins("https://katacam-g7fchjfvhucgf8gq.northeurope-01.azurewebsites.net",
+            "https://localhost:7006",
+            "https://localhost:44300",
+            "https://pure-current-mastodon.ngrok-free.app",
+            "https://localhost:4200",
+            "http://localhost:4200")//angular client
                .AllowAnyMethod()
                .AllowAnyHeader()
                .AllowCredentials();
     });
 });
+
+//builder.Services.AddCors(options =>
+//{
+//    options.AddPolicy("AllowAngularClient", policy =>
+//    {
+//        policy.WithOrigins("http://localhost:4200") // Move these to appsettings.json
+//              .AllowAnyMethod()
+//              .AllowAnyHeader()
+//              .AllowCredentials();
+//    });
+//});
 
 //Add Authentication Services (validation for JWT tokens)
 builder.Services.AddAuthentication(options =>
