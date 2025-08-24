@@ -9,7 +9,7 @@ namespace CameraFeed.Processor.Video;
 public interface ICameraWorker
 {
     Task RunAsync(CancellationToken token);
-    public bool IsRunning { get; }
+    //public bool IsRunning { get; }
     public int CameraId { get; }
 }
 
@@ -22,18 +22,16 @@ public abstract class CameraWorkerBase(CameraWorkerOptions options,
     protected readonly IVideoCaptureFactory _videoCaptureFactory = videoCaptureFactory;
     protected readonly IBackgroundSubtractorFactory _backgroundSubtractorFactory = backgroundSubtractorFactory;
 
+    protected VideoCapture? _capture;
     protected readonly CameraWorkerOptions _options = options;
 
-    protected volatile bool _isRunning; //volatile makes this bool threadsafe. if we don't assign this volatile, multiple threads or requests could read/write this value inconsistently.
+    //protected volatile bool _isRunning; //volatile makes this bool threadsafe. if we don't assign this volatile, multiple threads or requests could read/write this value inconsistently.
 
-    public bool IsRunning => _isRunning;
+    //public bool IsRunning => _isRunning;
 
     public int CameraId { get; } = options.CameraId;
 
-    protected string WorkerId => $"Worker {CameraId}";
     protected string NotifyImageGroup => $"camera_{CameraId}";
-
-    protected VideoCapture? _capture;
 
     public abstract Task RunAsync(CancellationToken token);
 }
@@ -46,7 +44,7 @@ public class CameraWorker(CameraWorkerOptions options,
 
     public override async Task RunAsync(CancellationToken token)
     {
-        _isRunning = true;
+        //_isRunning = true;
 
         try
         {
@@ -55,7 +53,7 @@ public class CameraWorker(CameraWorkerOptions options,
         catch (InvalidOperationException ex)
         {
             _logger.LogError(ex, "Failed to initialize camera with ID {CameraId}.", _options.CameraId);
-            _isRunning = false;
+            //_isRunning = false;
             _capture?.Dispose();
             return;
         }
@@ -136,7 +134,7 @@ public class CameraWorker(CameraWorkerOptions options,
     public void Dispose()
     {
         GC.SuppressFinalize(this);
-        _isRunning = false;
+        //_isRunning = false;
         _capture?.Dispose();
     }
 }
