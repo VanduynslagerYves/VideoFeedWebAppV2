@@ -1,6 +1,6 @@
-<button (click)="startCamera()">Start Camera</button>
-
 <div class="cambox">
-  <h3>Camera {{ cameraId }}</h3>
-  <canvas #canvas width="1280" height="720"></canvas>
+  <div class="camcontrols">
+    <button (click)="startCamera()">Start Camera</button><h3>Camera {{ cameraId }}</h3>
+  </div>
+      <canvas #canvas width="1280" height="720"></canvas>
 </div>

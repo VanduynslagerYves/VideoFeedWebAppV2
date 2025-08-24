@@ -1,24 +1,22 @@
 
-<nav class="navbar">
-  <div *ngIf="auth.isAuthenticated$ | async; else loginBlock">
+<nav id="navbar">
+  @if (auth.isAuthenticated$ | async) {
     <span>Welcome, {{ (auth.user$ | async)?.name }} </span>
     <button (click)="auth.logout()">Logout</button>
-  </div>
-  <ng-template #loginBlock>
+  } @else {
     <button (click)="auth.loginWithRedirect()">Login</button>
-  </ng-template>
+  }
 </nav>
 
-<main class="main">
-    <div>
-      <h1>Hello, {{ title() }}</h1>
-      <p>Congratulations! Your app is running. 🎉</p>
+<main id="main">
+  @if (auth.isAuthenticated$ | async) {
+    <div id="camsContainer">
+      <app-cam [cameraId]='0'></app-cam>
+      <app-cam [cameraId]='1'></app-cam>
     </div>
+  }
 </main>
 
-<div id="camsContainer">
-  <app-cam [cameraId]='0'></app-cam>
-  <app-cam [cameraId]='1'></app-cam>
-</div>
+<footer id="footer"></footer>
 
 <router-outlet />

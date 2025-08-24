@@ -41,7 +41,6 @@ body {
     width: 100% !important;
     height: auto !important;
     display: block;
-
     box-sizing: border-box;
     border: 3px solid black;
     border-radius: 5px;
@@ -55,8 +54,6 @@ body {
     width: 40%;
     min-width: 0;
     margin-left: 5px;
-    /*overflow: hidden;*/
-
     position: relative;
     display: flex;
     flex-direction: column;
