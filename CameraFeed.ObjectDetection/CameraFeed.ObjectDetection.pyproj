@@ -33,8 +33,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="app.py" />
+    <Compile Include="services\object_detection_service.py" />
     <Compile Include="util\create_tensor_model.py" />
     <Compile Include="model_utils.py" />
+    <Compile Include="util\deprecated.py" />
     <Compile Include="yolo_labels.py" />
   </ItemGroup>
   <ItemGroup>
@@ -43,6 +45,7 @@
     <Content Include="requirements.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="services\" />
     <Folder Include="util\" />
   </ItemGroup>
   <ItemGroup>

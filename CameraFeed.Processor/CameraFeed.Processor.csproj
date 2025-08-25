@@ -7,9 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Emgu.CV" Version="4.11.0.5746" />
-    <PackageReference Include="Emgu.CV.runtime.debian-arm64" Version="4.11.0.5746" />
-    <PackageReference Include="Emgu.CV.runtime.windows" Version="4.11.0.5746" />
+    <PackageReference Include="Emgu.CV" Version="4.12.0.5763" />
+    <PackageReference Include="Emgu.CV.runtime.debian-arm64" Version="4.12.0.5763" />
+    <PackageReference Include="Emgu.CV.runtime.windows" Version="4.12.0.5763" />
     <PackageReference Include="Google.Protobuf" Version="3.32.0" />
     <PackageReference Include="Grpc.Net.Client" Version="2.71.0" />
     <PackageReference Include="Grpc.Tools" Version="2.72.0">
@@ -18,7 +18,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.8" />
-    <PackageReference Include="Polly" Version="8.6.2" />
+    <PackageReference Include="Polly" Version="8.6.3" />
   </ItemGroup>
 
 	<ItemGroup>
