@@ -4,34 +4,26 @@ using System.Collections.Concurrent;
 
 namespace CameraFeed.Processor.Video;
 
-public interface ICameraWorkerManager
+public interface IWorkerManager
 {
-    Task<IActionResult> StartCameraWorkerAsync(CameraWorkerOptions options);
-    Task<bool> StopCameraWorkerAsync(int cameraId);
+    Task<IActionResult> StartAsync(StartWorkerOptions options);
+    Task<IActionResult> StopAsync(StopWorkerOptions options);
 }
 
-public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogger<CameraWorkerManager> logger) : ICameraWorkerManager
+public abstract class WorkerManagerBase : IWorkerManager
+{
+    public abstract Task<IActionResult> StartAsync(StartWorkerOptions options);
+    public abstract Task<IActionResult> StopAsync(StopWorkerOptions options);
+}
+
+public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogger<CameraWorkerManager> logger) : WorkerManagerBase
 {
     // Injected as singleton
     private readonly ICameraWorkerFactory _cameraWorkerFactory = cameraWorkerFactory;
     private readonly ILogger<CameraWorkerManager> _logger = logger;
-    private readonly ConcurrentDictionary<int, CameraWorkerEntry> _availableWorkers = new();
+    private readonly ConcurrentDictionary<int, WorkerEntry> _availableWorkers = new();
 
-    public async Task<IActionResult> StartCameraWorkerAsync(CameraWorkerOptions options)
-    {
-        // Check if a worker for the given camera ID already exists in the dictionary.
-        // If not, create and register a new camera worker entry.
-        if (!_availableWorkers.TryGetValue(options.CameraId, out var workerTuple))
-        {
-            await CreateCameraWorkerAsync(options);
-            workerTuple = _availableWorkers[options.CameraId];
-        }
-
-        // Attempt to start the worker and return an appropriate IActionResult.
-        return await StartWorkerAsync(workerTuple);
-    }
-
-    private async Task CreateCameraWorkerAsync(CameraWorkerOptions options)
+    private async Task<WorkerEntry> CreateCameraWorkerAsync(StartWorkerOptions options)
     {
         // Create a new cancellation token source for the camera worker.
         var cts = new CancellationTokenSource();
@@ -39,11 +31,27 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogg
         // Create the camera worker instance using the factory.
         var cameraWorker = await _cameraWorkerFactory.CreateCameraWorkerAsync(options);
 
+        var cameraWorkerEntry = new CameraWorkerEntry(cameraWorker, cts, null);
         // Register the new camera worker entry in the dictionary for future management.
-        _availableWorkers.TryAdd(options.CameraId, new CameraWorkerEntry(cameraWorker, cts, null));
+        _availableWorkers.TryAdd(options.CameraId, cameraWorkerEntry);
+
+        return cameraWorkerEntry;
     }
 
-    private async Task<IActionResult> StartWorkerAsync(CameraWorkerEntry cameraWorkerEntry)
+    public async override Task<IActionResult> StartAsync(StartWorkerOptions options)
+    {
+        // Check if a worker for the given camera ID already exists in the dictionary.
+        // If not, create and register a new camera worker entry.
+        if (!_availableWorkers.TryGetValue(options.CameraId, out var workerEntry))
+        {
+            workerEntry = await CreateCameraWorkerAsync(options);
+        }
+
+        // Attempt to start the worker and return an appropriate IActionResult.
+        return await StartWorkerAsync(workerEntry);
+    }
+
+    private async Task<IActionResult> StartWorkerAsync(WorkerEntry cameraWorkerEntry)
     {
         var worker = cameraWorkerEntry.Worker;
 
@@ -61,25 +69,17 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogg
             : CameraOperationResultFactory.Create(worker.CameraId, ResponseMessages.CameraStartFailed);
     }
 
-    public async Task<bool> StartCameraWorkerTaskAsync(CameraWorkerEntry cameraWorkerEntry)
+    private async Task<bool> StartCameraWorkerTaskAsync(WorkerEntry workerEntry)
     {
         // Only start the worker if it is not already running
-        if (cameraWorkerEntry.RunningTask == null)
+        if (workerEntry.RunningTask == null)
         {
-            var cameraId = cameraWorkerEntry.Worker.CameraId;
+            var cameraId = workerEntry.Worker.CameraId;
             try
             {
                 _logger.LogInformation("Starting worker {id}", cameraId);
-
-                // Start the camera worker in the background using Task.Run.
-                // The delegate passed to Task.Run is asynchronous, so we must await it inside.
-                // This ensures that any asynchronous operations within RunAsync are properly handled.
-                var task = Task.Run(async () => await cameraWorkerEntry.Worker.RunAsync(cameraWorkerEntry.Cts.Token));
+                workerEntry.Start();
                 _logger.LogInformation("Worker {id} is running...", cameraId);
-
-                // Store the running task reference for later management (e.g., stopping, status checks)
-                cameraWorkerEntry.RunningTask = task;
-                _availableWorkers[cameraId] = cameraWorkerEntry;
 
                 // Await Task.Yield() to ensure the method is truly asynchronous and does not block the calling thread.
                 await Task.Yield();
@@ -102,22 +102,65 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogg
         return false;
     }
 
-    public async Task<bool> StopCameraWorkerAsync(int cameraId)
+    public async override Task<IActionResult> StopAsync(StopWorkerOptions options)
     {
-        if (_availableWorkers.TryGetValue(cameraId, out var workerEntry) && workerEntry.RunningTask != null)
+        try
         {
-            workerEntry.Cts.Cancel();
-            await Task.Yield();
-
-            return workerEntry.RunningTask.IsCanceled;
+            if (_availableWorkers.TryGetValue(options.CameraId, out var workerEntry) && workerEntry.RunningTask != null)
+            {
+                workerEntry.Stop();
+                await Task.Yield();
+                return CameraOperationResultFactory.Create(options.CameraId, ResponseMessages.CameraStopped);
+            }
+            return CameraOperationResultFactory.Create(options.CameraId, ResponseMessages.CameraNotRunning);
         }
-
-        return true; // If the worker is not found or not running, consider it "stopped"
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error stopping worker {CameraId}", options.CameraId);
+            return CameraOperationResultFactory.Create(options.CameraId, "Error stopping camera worker.");
+        }
     }
 }
-public class CameraWorkerEntry(ICameraWorker worker, CancellationTokenSource cts, Task? runningTask)
+
+public abstract class WorkerEntry(ICameraWorker worker, CancellationTokenSource cts, Task? runningTask)
 {
     public ICameraWorker Worker { get; } = worker;
     public CancellationTokenSource Cts { get; } = cts;
     public Task? RunningTask { get; set; } = runningTask;
+
+    public abstract void Start();
+    public abstract void Stop();
+}
+
+public class CameraWorkerEntry(ICameraWorker worker, CancellationTokenSource cts, Task? runningTask) : WorkerEntry(worker, cts, runningTask)
+{
+    public override void Start()
+    {
+        // Start the camera worker in the background using Task.Run.
+        // The delegate passed to Task.Run is asynchronous, so we must await it inside.
+        // This ensures that any asynchronous operations within RunAsync are properly handled.
+        // Store the running task reference for later management (e.g., stopping, status checks)
+        RunningTask ??= Task.Run(async () => await Worker.RunAsync(Cts.Token));
+    }
+
+    public override void Stop()
+    {
+        Cts.Cancel();
+        Worker.ReleaseCapture();
+        RunningTask = null;
+    }
+}
+
+public abstract class WorkerOptions
+{
+    public required int CameraId { get; set; }
+}
+
+public class StopWorkerOptions : WorkerOptions { }
+
+public class StartWorkerOptions : WorkerOptions
+{
+    public required bool UseContinuousInference { get; set; } = false;
+    public required bool UseMotionDetection { get; set; } = false;
+    public required CameraOptions CameraOptions { get; set; }
 }

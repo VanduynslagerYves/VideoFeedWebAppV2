@@ -8,10 +8,10 @@ namespace CameraFeed.Processor.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class CameraController(ICameraWorkerManager cameraWorkerManager, IHubContext<CameraHub> hubContext, ILogger<CameraController> logger) : ControllerBase
+public class CameraController(IWorkerManager cameraWorkerManager, IHubContext<CameraHub> hubContext, ILogger<CameraController> logger) : ControllerBase
 {
     // Injected as singleton
-    private readonly ICameraWorkerManager _cameraWorkerManager = cameraWorkerManager;
+    private readonly IWorkerManager _cameraWorkerManager = cameraWorkerManager;
     private readonly IHubContext<CameraHub> _hubContext = hubContext;
     private readonly ILogger<CameraController> _logger = logger;
 
@@ -22,7 +22,7 @@ public class CameraController(ICameraWorkerManager cameraWorkerManager, IHubCont
         var selectedResolution = "720p"; //TODO: get from viewmodel or DTO
         var selectedFramerate = 15; //TODO: get from viewmodel or DTO
 
-        var cameraWorkerOptions = new CameraWorkerOptions //TODO: get from viewmodel or DTO
+        var optioons = new StartWorkerOptions //TODO: get from viewmodel or DTO
         {
             CameraId = cameraId,
             UseMotionDetection = false,
@@ -34,7 +34,7 @@ public class CameraController(ICameraWorkerManager cameraWorkerManager, IHubCont
             }
         };
 
-        var result = await _cameraWorkerManager.StartCameraWorkerAsync(cameraWorkerOptions);
+        var result = await _cameraWorkerManager.StartAsync(optioons);
         return result;
     }
 
@@ -54,7 +54,13 @@ public class CameraController(ICameraWorkerManager cameraWorkerManager, IHubCont
     [HttpPost("stopcam/{cameraId}")]
     public async Task<IActionResult> StopCamera(int cameraId)
     {
-        return NotFound(new { success = false, cameraId, message = "Camera not found." });
+        var options = new StopWorkerOptions
+        {
+            CameraId = cameraId,
+        };
+
+        await _cameraWorkerManager.StopAsync(options);
+        return Ok();
     }
 }
 

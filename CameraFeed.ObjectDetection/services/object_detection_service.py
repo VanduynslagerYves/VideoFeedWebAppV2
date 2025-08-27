@@ -3,10 +3,6 @@ import object_detection_pb2_grpc
 import numpy as np
 from PIL import Image, ImageDraw
 from io import BytesIO
-from model_utils import load_trt_model
-
-# Load the YOLO TensorRT engine
-model = load_trt_model("yolov8s.engine")
 
 def draw_bounding_boxes(img, results, model):
     draw = ImageDraw.Draw(img)

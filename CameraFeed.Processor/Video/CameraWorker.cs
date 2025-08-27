@@ -10,10 +10,11 @@ public interface ICameraWorker
 {
     Task RunAsync(CancellationToken token);
     //public bool IsRunning { get; }
-    public int CameraId { get; }
+    int CameraId { get; }
+    void ReleaseCapture();
 }
 
-public abstract class CameraWorkerBase(CameraWorkerOptions options,
+public abstract class CameraWorkerBase(StartWorkerOptions options,
     IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectioniClient,
     IHubContext<CameraHub> hubContext) : ICameraWorker
 {
@@ -23,7 +24,7 @@ public abstract class CameraWorkerBase(CameraWorkerOptions options,
     protected readonly IBackgroundSubtractorFactory _backgroundSubtractorFactory = backgroundSubtractorFactory;
 
     protected VideoCapture? _capture;
-    protected readonly CameraWorkerOptions _options = options;
+    protected readonly StartWorkerOptions _options = options;
 
     //protected volatile bool _isRunning; //volatile makes this bool threadsafe. if we don't assign this volatile, multiple threads or requests could read/write this value inconsistently.
 
@@ -34,11 +35,13 @@ public abstract class CameraWorkerBase(CameraWorkerOptions options,
     protected string NotifyImageGroup => $"camera_{CameraId}";
 
     public abstract Task RunAsync(CancellationToken token);
+
+    public abstract void ReleaseCapture();
 }
 
-public class CameraWorker(CameraWorkerOptions options,
+public class CameraWorker(StartWorkerOptions options,
     IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient,
-    ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : CameraWorkerBase(options, videoCaptureFactory, backgroundSubtractorFactory, objectDetectionClient, hubContext), IDisposable
+    ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : CameraWorkerBase(options, videoCaptureFactory, backgroundSubtractorFactory, objectDetectionClient, hubContext)
 {
     private readonly ILogger<CameraWorker> _logger = logger;
 
@@ -131,20 +134,10 @@ public class CameraWorker(CameraWorkerOptions options,
         await _hubContext.Clients.Group(NotifyImageGroup).SendAsync("ReceiveImgBytes", imageByteArray, token);
     }
 
-    public void Dispose()
+    public override void ReleaseCapture()
     {
-        GC.SuppressFinalize(this);
-        //_isRunning = false;
         _capture?.Dispose();
     }
-}
-
-public class CameraWorkerOptions
-{
-    public required int CameraId { get; set; }
-    public required bool UseContinuousInference { get; set; } = false;
-    public required bool UseMotionDetection { get; set; } = false;
-    public required CameraOptions CameraOptions { get; set; }
 }
 
 public class CameraOptions

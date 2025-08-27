@@ -5,12 +5,12 @@ using Microsoft.AspNetCore.SignalR;
 namespace CameraFeed.Processor.Video;
 public interface ICameraWorkerFactory
 {
-    Task<ICameraWorker> CreateCameraWorkerAsync(CameraWorkerOptions options);
+    Task<ICameraWorker> CreateCameraWorkerAsync(StartWorkerOptions options);
 }
 
 public class CameraWorkerFactory(ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient) : ICameraWorkerFactory
 {
-    public async Task<ICameraWorker> CreateCameraWorkerAsync(CameraWorkerOptions options)
+    public async Task<ICameraWorker> CreateCameraWorkerAsync(StartWorkerOptions options)
     {
         return await Task.FromResult(new CameraWorker(options, videoCaptureFactory, backgroundSubtractorFactory, objectDetectionClient, logger, hubContext));
     }

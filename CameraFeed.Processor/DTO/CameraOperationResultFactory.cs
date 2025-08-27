@@ -8,6 +8,8 @@ public static class ResponseMessages
     public const string CameraStarted = "Camera {0} has been started.";
     public const string CameraStartFailed = "Camera {0} failed to start.";
     public const string GeneralError = "An error occurred while processing your request for camera {0}.";
+    public const string CameraStopped = "Camera {0} has been stopped.";
+    public const string CameraNotRunning = "Camera {0} is not running.";
 }
 
 /// <summary>
@@ -46,6 +48,22 @@ public static class CameraOperationResultFactory
                     Success = false,
                     CameraId = cameraId,
                     Message = GetFormattedMessage(ResponseMessages.CameraStartFailed, cameraId)
+                };
+                break;
+            case ResponseMessages.CameraStopped:
+                result = new CameraOperationResultDto
+                {
+                    Success = true,
+                    CameraId = cameraId,
+                    Message = GetFormattedMessage(ResponseMessages.CameraStopped, cameraId)
+                };
+                break;
+            case ResponseMessages.CameraNotRunning:
+                result = new CameraOperationResultDto
+                {
+                    Success = false,
+                    CameraId = cameraId,
+                    Message = GetFormattedMessage(ResponseMessages.CameraNotRunning, cameraId)
                 };
                 break;
             default:

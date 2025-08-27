@@ -7,6 +7,8 @@ namespace CameraFeed.Web.ApiClients;
 public interface ICameraApiClient
 {
     Task<CameraApiOperationResult?> StartCameraAsync(int cameraId);
+
+    [Obsolete("This method is deprecated and will be removed in future versions.")]
     Task<List<int>?> GetAvailableCamerasAsync();
     void SetAccessToken(string accessToken);
 }
@@ -18,6 +20,7 @@ public abstract class CameraApiClientBase(IHttpClientFactory httpClientFactory) 
 
     public abstract Task<CameraApiOperationResult?> StartCameraAsync(int cameraId);
 
+    [Obsolete("This method is deprecated and will be removed in future versions.")]
     public abstract Task<List<int>?> GetAvailableCamerasAsync();
 
     public void SetAccessToken(string accessToken)
@@ -72,6 +75,7 @@ public class CameraApiClient(IHttpClientFactory httpClientFactory, ILogger<Camer
         }
     }
 
+    [Obsolete("This method is deprecated and will be removed in future versions.")]
     public override async Task<List<int>?> GetAvailableCamerasAsync()
     {
         using var httpClient = _httpClientFactory.CreateClient("CameraApi");

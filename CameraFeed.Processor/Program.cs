@@ -13,7 +13,7 @@ builder.Services.AddHttpClient();
 //DI
 builder.Services.AddSingleton<IObjectDetectionGrpcClient, ObjectDetectionGrpcClient>();
 builder.Services.AddSingleton<IObjectDetectionHttpClient, ObjectDetectionHttpClient>();
-builder.Services.AddSingleton<ICameraWorkerManager, CameraWorkerManager>();
+builder.Services.AddSingleton<IWorkerManager, CameraWorkerManager>();
 builder.Services.AddSingleton<ICameraWorkerFactory, CameraWorkerFactory>();
 builder.Services.AddSingleton<IVideoCaptureFactory, VideoCaptureFactory>();
 builder.Services.AddSingleton<IBackgroundSubtractorFactory, BackgroundSubtractorFactory>();
