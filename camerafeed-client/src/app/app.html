@@ -1,11 +1,16 @@
 
 <nav id="navbar">
+  <div id="title">
+    <h1>Camera Feed</h1>
+  </div>
+  <div id="user">
   @if (auth.isAuthenticated$ | async) {
     <span>Welcome, {{ (auth.user$ | async)?.name }} </span>
     <button (click)="auth.logout()">Logout</button>
   } @else {
     <button (click)="auth.loginWithRedirect()">Login</button>
   }
+  </div>
 </nav>
 
 <main id="main">

@@ -1,4 +1,4 @@
-import { Component, Input, ElementRef, ViewChild, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, Input, ElementRef, ViewChild, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { CameraService } from './camera.service';
 
@@ -18,6 +18,7 @@ export class Cam implements AfterViewInit, OnDestroy {
 
   /** SignalR connection for receiving real-time video frames */
   private connection!: signalR.HubConnection;
+
   /** Image object used to draw received frames onto the canvas */
   private img = new window.Image();
   /**
@@ -26,16 +27,18 @@ export class Cam implements AfterViewInit, OnDestroy {
    * intermediate frames are dropped if multiple arrive during image loading.
    */
   private latestPendingFrame: string | null = null;
+
   /** Indicates if an image is currently being loaded into the canvas */
   private loading = false;
 
-  // Inject the CameraService for starting the camera via HTTP
-  constructor(private cameraService: CameraService) {}
+  /** Indicates if the camera is currently loading */
+  public isCameraLoading = true;
 
-  /**
-   * Called when the "Start Camera" button is clicked
-   */
-  startCamera() {
+  // Inject the CameraService for starting the camera via HTTP
+  constructor(private cameraService: CameraService, private cdr: ChangeDetectorRef) {}
+
+  /** Starts the camera stream */
+  private startCamera() {
     this.cameraService.startCamera(this.cameraId).subscribe({
       next: (res) => console.log('Camera started', res),
       error: (err) => console.error('Error starting camera', err)
@@ -47,6 +50,8 @@ export class Cam implements AfterViewInit, OnDestroy {
    * Sets up the SignalR connection and image drawing logic
    */
   ngAfterViewInit() {
+    this.startCamera();
+
     if (!this.canvasRef) {
       console.error('Canvas reference not found');
       return;
@@ -79,13 +84,14 @@ export class Cam implements AfterViewInit, OnDestroy {
 
     // Listen for incoming image bytes from the server
     this.connection.on('ReceiveImgBytes', (data: string) => {
+      this.isCameraLoading = false; // Update camera loading state
+      this.cdr.detectChanges(); // Trigger change detection to update the UI
       this.displayFrame(data);
     });
     // If you add more SignalR events, consider removing them in ngOnDestroy for cleanup
 
     // Start the SignalR connection and join the group for this camera
-    this.connection
-      .start()
+    this.connection.start()
       .then(() => {
         this.connection.invoke('JoinGroup', `camera_${this.cameraId}`);
       })

@@ -1,6 +1,7 @@
 <div class="cambox">
   <div class="camcontrols">
-    <button (click)="startCamera()">Start Camera</button><h3>Camera {{ cameraId }}</h3>
+    <!-- <button (click)="startCamera()">Start Camera</button> -->
+    <h3>Camera {{ cameraId }} @if(isCameraLoading){ <span> (Loading...)</span>} @else{ <span> (Running...)</span>}</h3>
   </div>
       <canvas #canvas width="1280" height="720"></canvas>
 </div>
