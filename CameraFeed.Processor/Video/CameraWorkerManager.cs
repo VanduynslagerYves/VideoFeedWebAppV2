@@ -6,14 +6,14 @@ namespace CameraFeed.Processor.Video;
 
 public interface IWorkerManager
 {
-    Task<IActionResult> StartAsync(StartWorkerOptions options);
-    Task<IActionResult> StopAsync(StopWorkerOptions options);
+    Task<IActionResult> StartAsync(WorkerOptions options);
+    Task<IActionResult> StopAsync(int cameraId);
 }
 
 public abstract class WorkerManagerBase : IWorkerManager
 {
-    public abstract Task<IActionResult> StartAsync(StartWorkerOptions options);
-    public abstract Task<IActionResult> StopAsync(StopWorkerOptions options);
+    public abstract Task<IActionResult> StartAsync(WorkerOptions options);
+    public abstract Task<IActionResult> StopAsync(int cameraId);
 }
 
 public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogger<CameraWorkerManager> logger) : WorkerManagerBase
@@ -23,7 +23,7 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogg
     private readonly ILogger<CameraWorkerManager> _logger = logger;
     private readonly ConcurrentDictionary<int, WorkerEntry> _availableWorkers = new();
 
-    private async Task<WorkerEntry> CreateCameraWorkerAsync(StartWorkerOptions options)
+    private async Task<WorkerEntry> CreateCameraWorkerAsync(WorkerOptions options)
     {
         // Create a new cancellation token source for the camera worker.
         var cts = new CancellationTokenSource();
@@ -38,7 +38,7 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogg
         return cameraWorkerEntry;
     }
 
-    public async override Task<IActionResult> StartAsync(StartWorkerOptions options)
+    public async override Task<IActionResult> StartAsync(WorkerOptions options)
     {
         // Check if a worker for the given camera ID already exists in the dictionary.
         // If not, create and register a new camera worker entry.
@@ -102,22 +102,22 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogg
         return false;
     }
 
-    public async override Task<IActionResult> StopAsync(StopWorkerOptions options)
+    public async override Task<IActionResult> StopAsync(int cameraId)
     {
         try
         {
-            if (_availableWorkers.TryGetValue(options.CameraId, out var workerEntry) && workerEntry.RunningTask != null)
+            if (_availableWorkers.TryGetValue(cameraId, out var workerEntry) && workerEntry.RunningTask != null)
             {
                 workerEntry.Stop();
                 await Task.Yield();
-                return CameraOperationResultFactory.Create(options.CameraId, ResponseMessages.CameraStopped);
+                return CameraOperationResultFactory.Create(cameraId, ResponseMessages.CameraStopped);
             }
-            return CameraOperationResultFactory.Create(options.CameraId, ResponseMessages.CameraNotRunning);
+            return CameraOperationResultFactory.Create(cameraId, ResponseMessages.CameraNotRunning);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error stopping worker {CameraId}", options.CameraId);
-            return CameraOperationResultFactory.Create(options.CameraId, "Error stopping camera worker.");
+            _logger.LogError(ex, "Error stopping worker {CameraId}", cameraId);
+            return CameraOperationResultFactory.Create(cameraId, "Error stopping camera worker.");
         }
     }
 }
@@ -151,15 +151,9 @@ public class CameraWorkerEntry(ICameraWorker worker, CancellationTokenSource cts
     }
 }
 
-public abstract class WorkerOptions
+public class WorkerOptions()
 {
     public required int CameraId { get; set; }
-}
-
-public class StopWorkerOptions : WorkerOptions { }
-
-public class StartWorkerOptions : WorkerOptions
-{
     public required bool UseContinuousInference { get; set; } = false;
     public required bool UseMotionDetection { get; set; } = false;
     public required CameraOptions CameraOptions { get; set; }

@@ -27,8 +27,5 @@ public static class SupportedCameraProperties
     public static readonly List<string> ResolutionKeys = [.. Resolutions.Keys];
 }
 
-public class CameraResolution
-{
-    public required double Width { get; set; }
-    public required double Height { get; set; }
-}
+// Using 'record struct' for a lightweight, immutable data structure to hold resolution details.
+public record struct CameraResolution(int Width, int Height);

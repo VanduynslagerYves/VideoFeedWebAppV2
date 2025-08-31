@@ -9,22 +9,19 @@ namespace CameraFeed.Processor.Video;
 public interface ICameraWorker
 {
     Task RunAsync(CancellationToken token);
-    //public bool IsRunning { get; }
     int CameraId { get; }
     void ReleaseCapture();
 }
 
-public abstract class CameraWorkerBase(StartWorkerOptions options,
-    IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectioniClient,
+public abstract class CameraWorkerBase(VideoCapture capture, WorkerOptions options, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectioniClient,
     IHubContext<CameraHub> hubContext) : ICameraWorker
 {
     protected readonly IObjectDetectionGrpcClient _objectDetectionClient = objectDetectioniClient;
     protected readonly IHubContext<CameraHub> _hubContext = hubContext;
-    protected readonly IVideoCaptureFactory _videoCaptureFactory = videoCaptureFactory;
     protected readonly IBackgroundSubtractorFactory _backgroundSubtractorFactory = backgroundSubtractorFactory;
 
-    protected VideoCapture? _capture;
-    protected readonly StartWorkerOptions _options = options;
+    protected readonly VideoCapture _capture = capture;
+    protected readonly WorkerOptions _options = options;
 
     //protected volatile bool _isRunning; //volatile makes this bool threadsafe. if we don't assign this volatile, multiple threads or requests could read/write this value inconsistently.
 
@@ -39,28 +36,13 @@ public abstract class CameraWorkerBase(StartWorkerOptions options,
     public abstract void ReleaseCapture();
 }
 
-public class CameraWorker(StartWorkerOptions options,
-    IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient,
-    ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : CameraWorkerBase(options, videoCaptureFactory, backgroundSubtractorFactory, objectDetectionClient, hubContext)
+public class CameraWorker(VideoCapture capture, WorkerOptions options, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient,
+    ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : CameraWorkerBase(capture, options, backgroundSubtractorFactory, objectDetectionClient, hubContext)
 {
     private readonly ILogger<CameraWorker> _logger = logger;
 
     public override async Task RunAsync(CancellationToken token)
     {
-        //_isRunning = true;
-
-        try
-        {
-            InitCamera();
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogError(ex, "Failed to initialize camera with ID {CameraId}.", _options.CameraId);
-            //_isRunning = false;
-            _capture?.Dispose();
-            return;
-        }
-
         var subtractor = _backgroundSubtractorFactory.Create();
         var fgMask = new Mat();
 
@@ -78,20 +60,6 @@ public class CameraWorker(StartWorkerOptions options,
 
             await SendFrameToClientsAsync(imageByteArray, token);
         }
-    }
-
-    private void InitCamera()
-    {
-        _capture = _videoCaptureFactory.Create(_options.CameraId);
-        if (_capture == null || !_capture.IsOpened)
-        {
-            throw new InvalidOperationException($"Camera with ID {_options.CameraId} could not be initialized. Ensure the camera is connected and accessible.");
-        }
-
-        _capture.Set(CapProp.FrameWidth, _options.CameraOptions.Resolution.Width);
-        _capture.Set(CapProp.FrameHeight, _options.CameraOptions.Resolution.Height);
-        _capture.Set(CapProp.Fps, _options.CameraOptions.Framerate);
-        _capture.Set(CapProp.FourCC, VideoWriter.Fourcc('M', 'J', 'P', 'G')); // MJPEG if supported
     }
 
     public virtual async Task<byte[]> RunInference(byte[] frameData, CancellationToken cancellationToken = default)

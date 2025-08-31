@@ -1,5 +1,4 @@
-﻿using CameraFeed.Processor.DTO;
-using CameraFeed.Processor.Video;
+﻿using CameraFeed.Processor.Video;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -22,7 +21,7 @@ public class CameraController(IWorkerManager cameraWorkerManager, IHubContext<Ca
         var selectedResolution = "720p"; //TODO: get from viewmodel or DTO
         var selectedFramerate = 15; //TODO: get from viewmodel or DTO
 
-        var optioons = new StartWorkerOptions //TODO: get from viewmodel or DTO
+        var optioons = new WorkerOptions //TODO: get from viewmodel or DTO
         {
             CameraId = cameraId,
             UseMotionDetection = false,
@@ -54,12 +53,7 @@ public class CameraController(IWorkerManager cameraWorkerManager, IHubContext<Ca
     [HttpPost("stopcam/{cameraId}")]
     public async Task<IActionResult> StopCamera(int cameraId)
     {
-        var options = new StopWorkerOptions
-        {
-            CameraId = cameraId,
-        };
-
-        await _cameraWorkerManager.StopAsync(options);
+        await _cameraWorkerManager.StopAsync(cameraId);
         return Ok();
     }
 }
