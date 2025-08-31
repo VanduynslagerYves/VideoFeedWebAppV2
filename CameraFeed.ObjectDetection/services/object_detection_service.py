@@ -4,21 +4,23 @@ import numpy as np
 from PIL import Image, ImageDraw
 from io import BytesIO
 
+label_colors = {
+        "person": "green",
+        "car": "blue",
+        "motorcycle": "yellow",
+        "bicycle": "orange"
+    }
+
 def draw_bounding_boxes(img, results, model):
     draw = ImageDraw.Draw(img)
+    names = model.names
     for result in results:
         for box in result.boxes:
             class_id = int(box.cls[0])
-            label = model.names[class_id].lower()
-            bbox = box.xyxy[0].tolist()
-            if label == "person":
-                draw_rectangle(draw, bbox, "green")
-            elif label == "car":
-                draw_rectangle(draw, bbox, "blue")
-            elif label == "motorcycle":
-                draw_rectangle(draw, bbox, "yellow")
-            elif label == "bicycle":
-                draw_rectangle(draw, bbox, "orange")
+            label = names[class_id].lower()
+            color = label_colors.get(label)
+            if color:
+                draw_rectangle(draw, box.xyxy[0].tolist(), color)
 
 def draw_rectangle(draw, bbox, color):
     draw.rectangle(bbox, outline=color, width=2)
@@ -31,10 +33,7 @@ class ObjectDetectionService(object_detection_pb2_grpc.ObjectDetectionServicer):
         for request in request_iterator:
             img = Image.open(BytesIO(request.image_data)).convert("RGB")
             img_np = np.array(img)
-            results = self.model.predict(
-                img_np,
-                classes=[0, 1, 2, 3]
-            )
+            results = self.model.predict(img_np, classes=[0, 1, 2, 3], conf=0.4, verbose=False, device="cuda")
             draw_bounding_boxes(img, results, self.model)
             buf = BytesIO()
             img.save(buf, format="JPEG", quality=78)
