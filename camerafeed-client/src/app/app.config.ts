@@ -21,17 +21,6 @@ export const appConfig: ApplicationConfig = {
         audience: 'https://localhost:7214',
         scope: 'openid profile email'
       },
-      httpInterceptor: {
-        allowedList: [
-          { uri: 'https://localhost:7214/api/camera/*' },
-          { uri: 'https://localhost:7214/*' }
-        ]
-      }
     }),
-    {
-      provide: 'HTTP_INTERCEPTORS',
-      useClass: AuthHttpInterceptor,
-      multi: true
-    }
   ]
 };
