@@ -12,7 +12,6 @@ public class CameraWorkerBuilder(
     IObjectDetectionGrpcClient objectDetectionClient)
 {
     private int _cameraId;
-    private bool _useContinuousInference;
     private bool _useMotionDetection;
     private CameraResolution _resolution = new() { Width = 1920, Height = 1080 };
     private int _framerate = 30;
@@ -35,12 +34,6 @@ public class CameraWorkerBuilder(
         return this;
     }
 
-    public CameraWorkerBuilder UseContinuousInference(bool value = true)
-    {
-        _useContinuousInference = value;
-        return this;
-    }
-
     public CameraWorkerBuilder UseMotionDetection(bool value = true)
     {
         _useMotionDetection = value;
@@ -52,7 +45,7 @@ public class CameraWorkerBuilder(
         var options = new WorkerOptions
         {
             CameraId = _cameraId,
-            UseContinuousInference = _useContinuousInference,
+            Mode = InferenceMode.MotionBased,
             CameraOptions = new CameraOptions
             {
                 Resolution = _resolution,

@@ -23,7 +23,7 @@ public class CameraController(IWorkerManager cameraWorkerManager, IHubContext<Ca
         var optioons = new WorkerOptions //TODO: get from viewmodel or DTO
         {
             CameraId = cameraId,
-            UseContinuousInference = true,
+            Mode = InferenceMode.MotionBased,
             CameraOptions = new CameraOptions
             {
                 Resolution = SupportedCameraProperties.GetResolutionById(selectedResolution),

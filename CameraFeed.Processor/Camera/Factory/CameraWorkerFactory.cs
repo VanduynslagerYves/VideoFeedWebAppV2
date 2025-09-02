@@ -1,5 +1,4 @@
 ﻿using CameraFeed.Processor.Services.gRPC;
-using Emgu.CV;
 using Microsoft.AspNetCore.SignalR;
 
 namespace CameraFeed.Processor.Camera.Factory;
@@ -15,19 +14,5 @@ public class CameraWorkerFactory(IVideoCaptureFactory videoCaptureFactory, IBack
     {
         var worker = new CameraWorker(options, videoCaptureFactory, backgroundSubtractorFactory, objectDetectionClient, logger, hubContext);
         return Task.FromResult<ICameraWorker>(worker);
-    }
-}
-
-public interface IBackgroundSubtractorFactory
-{
-    Task<BackgroundSubtractorMOG2> CreateAsync();
-}
-
-public class BackgroundSubtractorFactory : IBackgroundSubtractorFactory
-{
-    public Task<BackgroundSubtractorMOG2> CreateAsync()
-    {
-        var subractor = new BackgroundSubtractorMOG2(history: 500, shadowDetection: false);
-        return Task.FromResult(subractor);
     }
 }

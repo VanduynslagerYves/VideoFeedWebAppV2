@@ -39,8 +39,8 @@ public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptu
         try
         {
             using var capture = await _videoCaptureFactory.CreateAsync(_options);
-            using var subtractor = await _backgroundSubtractorFactory.CreateAsync();
-            using var fgMask = new Mat();
+            using var subtractor = await _backgroundSubtractorFactory.CreateAsync(type: BackgroundSubtractorType.MOG2);
+            using var foregroundMask = new Mat();
 
             while (!token.IsCancellationRequested)
             {
@@ -49,7 +49,7 @@ public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptu
 
                 var imageByteArray = ConvertFrameToByteArray(capturedFrame);
 
-                if (_options.UseContinuousInference || MotionDetected(capturedFrame, fgMask, subtractor))
+                if (ShouldRunInference(capturedFrame, foregroundMask, subtractor))
                 {
                     imageByteArray = await RunInference(imageByteArray, token);
                 }
@@ -71,6 +71,19 @@ public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptu
         }
     }
 
+    private bool ShouldRunInference(Mat capturedFrame, Mat fgMask, IBackgroundSubtractorAdapter subtractor)
+    {
+        switch(_options.Mode)
+        {
+            case InferenceMode.Continuous:
+                return true;
+            case InferenceMode.MotionBased:
+                return MotionDetected(capturedFrame, fgMask, subtractor); // Handled separately in the main loop
+            default:
+                return false;
+        }
+    }
+
     public virtual async Task<byte[]> RunInference(byte[] frameData, CancellationToken cancellationToken = default)
     {
         // Call the gRPC object detection
@@ -78,20 +91,24 @@ public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptu
         return processedFrame;
     }
 
-    // This is expensive wtf
-    protected virtual bool MotionDetected(Mat frame, Mat fgMask, BackgroundSubtractorMOG2 subtractor)
+    protected virtual bool MotionDetected(Mat frame, Mat foregroundMask, IBackgroundSubtractorAdapter subtractor)
     {
         // Downscale frame for faster processing
         var downscaleFactor = 16; // Downscale by a factor of 16
+        int downscaledWidth = frame.Width / downscaleFactor;
+        int downscaledHeight = frame.Height / downscaleFactor;
 
-        using var smallFrame = new Mat();
-        CvInvoke.Resize(frame, smallFrame, new System.Drawing.Size(frame.Width / downscaleFactor, frame.Height / downscaleFactor), interpolation: Inter.Linear);
+        using var downscaledFrame = new Mat();
+        CvInvoke.Resize(frame, downscaledFrame, new System.Drawing.Size(downscaledWidth, downscaledHeight), interpolation: Inter.Linear);
 
-        subtractor.Apply(smallFrame, fgMask);
+        subtractor.Apply(downscaledFrame, foregroundMask); // foregroundMask now contains white pixels where motion is detected
+        int motionPixels = CvInvoke.CountNonZero(foregroundMask);
 
-        int motionPixels = CvInvoke.CountNonZero(fgMask);
-        // Adjust threshold for smaller frame
-        if (motionPixels > 4000 / (downscaleFactor ^ 2)) // 1/256th of original area
+        int downscaledArea = downscaledWidth * downscaledHeight;
+        double motionRatio = 0.03; // 3% of the area
+        int threshold = (int)(downscaledArea * motionRatio);
+
+        if (motionPixels > threshold)
         {
             _logger.LogInformation("Motion detected in frame with {motionPixels} pixels at {timeStamp}", motionPixels, DateTime.Now);
             return true;
@@ -115,8 +132,7 @@ public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptu
 public class WorkerOptions
 {
     public required int CameraId { get; set; }
-    public required bool UseContinuousInference { get; set; } = false;
-    //public required bool UseMotionDetection { get; set; } = false;
+    public required InferenceMode Mode { get; set; }
     public required CameraOptions CameraOptions { get; set; }
 }
 
@@ -130,4 +146,10 @@ public class CameraResolution
 {
     public required int Width;
     public required int Height;
+}
+
+public enum InferenceMode
+{
+    MotionBased,
+    Continuous
 }
