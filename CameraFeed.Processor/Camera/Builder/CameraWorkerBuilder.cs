@@ -1,4 +1,5 @@
-﻿using CameraFeed.Processor.Camera.Factory;
+﻿using CameraFeed.Processor.Camera.Worker;
+using CameraFeed.Processor.Camera.Worker;
 using CameraFeed.Processor.Services.gRPC;
 using Microsoft.AspNetCore.SignalR;
 

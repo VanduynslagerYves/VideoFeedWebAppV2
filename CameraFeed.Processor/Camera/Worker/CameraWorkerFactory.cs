@@ -1,7 +1,7 @@
 ﻿using CameraFeed.Processor.Services.gRPC;
 using Microsoft.AspNetCore.SignalR;
 
-namespace CameraFeed.Processor.Camera.Factory;
+namespace CameraFeed.Processor.Camera.Worker;
 
 public interface ICameraWorkerFactory
 {

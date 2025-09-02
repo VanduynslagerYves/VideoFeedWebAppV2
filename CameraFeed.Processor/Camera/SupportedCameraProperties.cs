@@ -1,4 +1,6 @@
-﻿namespace CameraFeed.Processor.Camera;
+﻿using CameraFeed.Processor.Camera.Worker;
+
+namespace CameraFeed.Processor.Camera;
 
 public static class SupportedCameraProperties
 {

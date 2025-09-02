@@ -2,7 +2,7 @@ using CameraFeed.Processor.Services.gRPC;
 using CameraFeed.Processor.Services.HTTP;
 using CameraFeed.Processor.Camera;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using CameraFeed.Processor.Camera.Factory;
+using CameraFeed.Processor.Camera.Worker;
 
 var builder = WebApplication.CreateBuilder(args);
 

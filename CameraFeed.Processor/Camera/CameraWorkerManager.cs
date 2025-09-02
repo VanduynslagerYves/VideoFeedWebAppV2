@@ -1,4 +1,4 @@
-﻿using CameraFeed.Processor.Camera.Factory;
+﻿using CameraFeed.Processor.Camera.Worker;
 using CameraFeed.Processor.DTO;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Concurrent;
