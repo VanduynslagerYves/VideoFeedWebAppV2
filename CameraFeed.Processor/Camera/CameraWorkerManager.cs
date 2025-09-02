@@ -1,8 +1,9 @@
-﻿using CameraFeed.Processor.DTO;
+﻿using CameraFeed.Processor.Camera.Factory;
+using CameraFeed.Processor.DTO;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Concurrent;
 
-namespace CameraFeed.Processor.Video;
+namespace CameraFeed.Processor.Camera;
 
 public interface IWorkerManager
 {
@@ -23,6 +24,19 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogg
     private readonly ILogger<CameraWorkerManager> _logger = logger;
     private readonly ConcurrentDictionary<int, WorkerEntry> _availableWorkers = new();
 
+    public async override Task<IActionResult> StartAsync(WorkerOptions options)
+    {
+        // Check if a worker for the given camera ID already exists in the dictionary.
+        // If not, create and register a new camera worker entry.
+        if (!_availableWorkers.TryGetValue(options.CameraId, out var workerEntry))
+        {
+            workerEntry = await CreateCameraWorkerAsync(options);
+        }
+
+        // Attempt to start the worker and return an appropriate IActionResult.
+        return await StartCameraWorkerAsync(workerEntry);
+    }
+
     private async Task<WorkerEntry> CreateCameraWorkerAsync(WorkerOptions options)
     {
         // Create a new cancellation token source for the camera worker.
@@ -38,20 +52,7 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogg
         return cameraWorkerEntry;
     }
 
-    public async override Task<IActionResult> StartAsync(WorkerOptions options)
-    {
-        // Check if a worker for the given camera ID already exists in the dictionary.
-        // If not, create and register a new camera worker entry.
-        if (!_availableWorkers.TryGetValue(options.CameraId, out var workerEntry))
-        {
-            workerEntry = await CreateCameraWorkerAsync(options);
-        }
-
-        // Attempt to start the worker and return an appropriate IActionResult.
-        return await StartWorkerAsync(workerEntry);
-    }
-
-    private async Task<IActionResult> StartWorkerAsync(WorkerEntry cameraWorkerEntry)
+    private async Task<IActionResult> StartCameraWorkerAsync(WorkerEntry cameraWorkerEntry)
     {
         var worker = cameraWorkerEntry.Worker;
 
@@ -69,16 +70,16 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogg
             : CameraOperationResultFactory.Create(worker.CameraId, ResponseMessages.CameraStartFailed);
     }
 
-    private async Task<bool> StartCameraWorkerTaskAsync(WorkerEntry workerEntry)
+    private async Task<bool> StartCameraWorkerTaskAsync(WorkerEntry cameraWorkerEntry)
     {
         // Only start the worker if it is not already running
-        if (workerEntry.RunningTask == null)
+        if (cameraWorkerEntry.RunningTask == null)
         {
-            var cameraId = workerEntry.Worker.CameraId;
+            var cameraId = cameraWorkerEntry.Worker.CameraId;
             try
             {
                 _logger.LogInformation("Starting worker {id}", cameraId);
-                workerEntry.Start();
+                cameraWorkerEntry.Start();
                 _logger.LogInformation("Worker {id} is running...", cameraId);
 
                 // Await Task.Yield() to ensure the method is truly asynchronous and does not block the calling thread.
@@ -134,27 +135,23 @@ public abstract class WorkerEntry(ICameraWorker worker, CancellationTokenSource 
 
 public class CameraWorkerEntry(ICameraWorker worker, CancellationTokenSource cts, Task? runningTask) : WorkerEntry(worker, cts, runningTask)
 {
+    /// <summary>
+    /// Starts the camera worker on a background thread.
+    /// </summary>
+    /// <remarks>This method initializes and runs the camera worker asynchronously using a background thread. 
+    /// If the worker is already running, this method does nothing. The running task is stored for later management,
+    /// such as stopping or checking the status.</remarks>
     public override void Start()
     {
-        // Start the camera worker in the background using Task.Run.
-        // The delegate passed to Task.Run is asynchronous, so we must await it inside.
-        // This ensures that any asynchronous operations within RunAsync are properly handled.
-        // Store the running task reference for later management (e.g., stopping, status checks)
-        RunningTask ??= Task.Run(async () => await Worker.RunAsync(Cts.Token));
+        // The async delegate is handled correctly by Task.Run, so we do not await the call to RunAsync here. This avoids an extra state machine.
+        // When you write an async method, the C# compiler automatically generates a state machine behind the scenes.
+        // This state machine keeps track of where the method should resume after each await, allowing your code to pause and continue asynchronously without blocking the thread.
+        RunningTask ??= Task.Run(() => Worker.RunAsync(Cts.Token));
     }
 
     public override void Stop()
     {
         Cts.Cancel();
-        Worker.ReleaseCapture();
         RunningTask = null;
     }
-}
-
-public class WorkerOptions()
-{
-    public required int CameraId { get; set; }
-    public required bool UseContinuousInference { get; set; } = false;
-    public required bool UseMotionDetection { get; set; } = false;
-    public required CameraOptions CameraOptions { get; set; }
 }

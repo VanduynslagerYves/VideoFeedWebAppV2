@@ -3,62 +3,71 @@ using Emgu.CV.Structure;
 using Emgu.CV.CvEnum;
 using Microsoft.AspNetCore.SignalR;
 using CameraFeed.Processor.Services.gRPC;
+using CameraFeed.Processor.Camera.Factory;
 
-namespace CameraFeed.Processor.Video;
+namespace CameraFeed.Processor.Camera;
 
 public interface ICameraWorker
 {
     Task RunAsync(CancellationToken token);
     int CameraId { get; }
-    void ReleaseCapture();
 }
 
-public abstract class CameraWorkerBase(VideoCapture capture, WorkerOptions options, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectioniClient,
+public abstract class CameraWorkerBase(WorkerOptions options, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectioniClient,
     IHubContext<CameraHub> hubContext) : ICameraWorker
 {
     protected readonly IObjectDetectionGrpcClient _objectDetectionClient = objectDetectioniClient;
     protected readonly IHubContext<CameraHub> _hubContext = hubContext;
     protected readonly IBackgroundSubtractorFactory _backgroundSubtractorFactory = backgroundSubtractorFactory;
-
-    protected readonly VideoCapture _capture = capture;
+    protected readonly IVideoCaptureFactory _videoCaptureFactory = videoCaptureFactory;
     protected readonly WorkerOptions _options = options;
-
-    //protected volatile bool _isRunning; //volatile makes this bool threadsafe. if we don't assign this volatile, multiple threads or requests could read/write this value inconsistently.
-
-    //public bool IsRunning => _isRunning;
-
-    public int CameraId { get; } = options.CameraId;
 
     protected string NotifyImageGroup => $"camera_{CameraId}";
 
-    public abstract Task RunAsync(CancellationToken token);
+    public int CameraId { get; } = options.CameraId;
 
-    public abstract void ReleaseCapture();
+    public abstract Task RunAsync(CancellationToken token);
 }
 
-public class CameraWorker(VideoCapture capture, WorkerOptions options, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient,
-    ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : CameraWorkerBase(capture, options, backgroundSubtractorFactory, objectDetectionClient, hubContext)
+public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient,
+    ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : CameraWorkerBase(options, videoCaptureFactory, backgroundSubtractorFactory, objectDetectionClient, hubContext)
 {
     private readonly ILogger<CameraWorker> _logger = logger;
 
     public override async Task RunAsync(CancellationToken token)
     {
-        var subtractor = _backgroundSubtractorFactory.Create();
-        var fgMask = new Mat();
-
-        while (!token.IsCancellationRequested)
+        try
         {
-            using var capturedFrame = _capture!.QueryFrame();
-            if (capturedFrame == null || capturedFrame.IsEmpty) continue;
+            using var capture = await _videoCaptureFactory.CreateAsync(_options);
+            using var subtractor = await _backgroundSubtractorFactory.CreateAsync();
+            using var fgMask = new Mat();
 
-            var imageByteArray = ConvertFrameToByteArray(capturedFrame);
-
-            if (_options.UseContinuousInference || (_options.UseMotionDetection && MotionDetected(capturedFrame, fgMask, subtractor)))
+            while (!token.IsCancellationRequested)
             {
-                imageByteArray = await RunInference(imageByteArray, token);
-            }
+                using var capturedFrame = capture!.QueryFrame();
+                if (capturedFrame == null || capturedFrame.IsEmpty) continue;
 
-            await SendFrameToClientsAsync(imageByteArray, token);
+                var imageByteArray = ConvertFrameToByteArray(capturedFrame);
+
+                if (_options.UseContinuousInference || (_options.UseMotionDetection && MotionDetected(capturedFrame, fgMask, subtractor)))
+                {
+                    imageByteArray = await RunInference(imageByteArray, token);
+                }
+
+                await SendFrameToClientsAsync(imageByteArray, token);
+            }
+        }
+        catch(OperationCanceledException)
+        {
+            _logger.LogInformation("CameraWorker for camera {cameraId} was cancelled.", CameraId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred in CameraWorker for camera {cameraId}: {message}", CameraId, ex.Message);
+        }
+        finally
+        {
+            _logger.LogInformation("CameraWorker for camera {cameraId} has stopped.", CameraId);
         }
     }
 
@@ -101,15 +110,24 @@ public class CameraWorker(VideoCapture capture, WorkerOptions options, IBackgrou
     {
         await _hubContext.Clients.Group(NotifyImageGroup).SendAsync("ReceiveImgBytes", imageByteArray, token);
     }
+}
 
-    public override void ReleaseCapture()
-    {
-        _capture?.Dispose();
-    }
+public class WorkerOptions
+{
+    public required int CameraId { get; set; }
+    public required bool UseContinuousInference { get; set; } = false;
+    public required bool UseMotionDetection { get; set; } = false;
+    public required CameraOptions CameraOptions { get; set; }
 }
 
 public class CameraOptions
 {
     public required CameraResolution Resolution { get; set; }
     public required int Framerate { get; set; }
+}
+
+public class CameraResolution
+{
+    public required int Width;
+    public required int Height;
 }

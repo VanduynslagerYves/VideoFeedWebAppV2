@@ -58,6 +58,7 @@ public class ObjectDetectionGrpcClient : IObjectDetectionGrpcClient, IDisposable
         }
     }
 
+    //In ASP.NET Core, when you register a service as a singleton and it implements IDisposable, the DI container will automatically call Dispose() on application shutdown.
     public void Dispose()
     {
         GC.SuppressFinalize(this);

@@ -1,4 +1,4 @@
-﻿namespace CameraFeed.Processor.Video;
+﻿namespace CameraFeed.Processor.Camera;
 
 public static class SupportedCameraProperties
 {
@@ -26,6 +26,3 @@ public static class SupportedCameraProperties
 
     public static readonly List<string> ResolutionKeys = [.. Resolutions.Keys];
 }
-
-// Using 'record struct' for a lightweight, immutable data structure to hold resolution details.
-public record struct CameraResolution(int Width, int Height);

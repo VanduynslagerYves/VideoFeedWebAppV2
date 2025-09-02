@@ -1,16 +1,15 @@
-﻿using CameraFeed.Processor.Video;
+﻿using CameraFeed.Processor.Camera;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 
 namespace CameraFeed.Processor.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/camera")]
 [ApiController]
 public class CameraController(IWorkerManager cameraWorkerManager, IHubContext<CameraHub> hubContext, ILogger<CameraController> logger) : ControllerBase
 {
-    // Injected as singleton
-    private readonly IWorkerManager _cameraWorkerManager = cameraWorkerManager;
+    private readonly IWorkerManager _cameraWorkerManager = cameraWorkerManager; //singleton
     private readonly IHubContext<CameraHub> _hubContext = hubContext;
     private readonly ILogger<CameraController> _logger = logger;
 

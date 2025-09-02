@@ -1,7 +1,8 @@
-﻿using CameraFeed.Processor.Services.gRPC;
+﻿using CameraFeed.Processor.Camera.Factory;
+using CameraFeed.Processor.Services.gRPC;
 using Microsoft.AspNetCore.SignalR;
 
-namespace CameraFeed.Processor.Video;
+namespace CameraFeed.Processor.Camera.Builder;
 
 public class CameraWorkerBuilder(
     ILogger<CameraWorker> logger,
@@ -46,7 +47,7 @@ public class CameraWorkerBuilder(
         return this;
     }
 
-    public async Task<ICameraWorker> BuildAsync()
+    public Task<ICameraWorker> Build()
     {
         var options = new WorkerOptions
         {
@@ -59,14 +60,15 @@ public class CameraWorkerBuilder(
                 Framerate = _framerate
             }
         };
-
-        var capture = await videoCaptureFactory.CreateAsync(options);
-        return new CameraWorker(
-            capture,
+        
+        var worker = new CameraWorker(
             options,
+            videoCaptureFactory,
             backgroundSubtractorFactory,
             objectDetectionClient,
             logger,
             hubContext);
+
+        return Task.FromResult<ICameraWorker>(worker);
     }
 }
