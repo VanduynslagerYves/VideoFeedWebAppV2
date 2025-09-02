@@ -53,7 +53,6 @@ public class CameraWorkerBuilder(
         {
             CameraId = _cameraId,
             UseContinuousInference = _useContinuousInference,
-            UseMotionDetection = _useMotionDetection,
             CameraOptions = new CameraOptions
             {
                 Resolution = _resolution,

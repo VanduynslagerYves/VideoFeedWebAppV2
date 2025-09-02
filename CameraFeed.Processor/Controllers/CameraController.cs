@@ -23,7 +23,6 @@ public class CameraController(IWorkerManager cameraWorkerManager, IHubContext<Ca
         var optioons = new WorkerOptions //TODO: get from viewmodel or DTO
         {
             CameraId = cameraId,
-            UseMotionDetection = false,
             UseContinuousInference = true,
             CameraOptions = new CameraOptions
             {

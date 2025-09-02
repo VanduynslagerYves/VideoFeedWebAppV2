@@ -49,11 +49,11 @@ public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptu
 
                 var imageByteArray = ConvertFrameToByteArray(capturedFrame);
 
-                if (_options.UseContinuousInference || (_options.UseMotionDetection && MotionDetected(capturedFrame, fgMask, subtractor)))
+                if (_options.UseContinuousInference || MotionDetected(capturedFrame, fgMask, subtractor))
                 {
                     imageByteArray = await RunInference(imageByteArray, token);
                 }
-
+                
                 await SendFrameToClientsAsync(imageByteArray, token);
             }
         }
@@ -116,7 +116,7 @@ public class WorkerOptions
 {
     public required int CameraId { get; set; }
     public required bool UseContinuousInference { get; set; } = false;
-    public required bool UseMotionDetection { get; set; } = false;
+    //public required bool UseMotionDetection { get; set; } = false;
     public required CameraOptions CameraOptions { get; set; }
 }
 

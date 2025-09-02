@@ -27,7 +27,7 @@ public class BackgroundSubtractorFactory : IBackgroundSubtractorFactory
 {
     public Task<BackgroundSubtractorMOG2> CreateAsync()
     {
-        var subractor = new BackgroundSubtractorMOG2();
+        var subractor = new BackgroundSubtractorMOG2(history: 500, shadowDetection: false);
         return Task.FromResult(subractor);
     }
 }
