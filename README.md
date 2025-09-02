@@ -2,7 +2,7 @@
 
 This repository contains a multi-component system for video feed processing, object/human detection, and web-based visualization. It includes:
 - **CameraFeed.Web**: Razor Pages web frontend (.NET 9)
-- **camerafeed-client: Angular frontend
+- **camerafeed-client**: Angular frontend
 - **CameraFeed.API**: .NET 9 backend API for video and object detection
 - **CameraFeed.ObjectDetectionAPI**: Python FastAPI service for human detection using YOLO (PyTorch)
 ---
