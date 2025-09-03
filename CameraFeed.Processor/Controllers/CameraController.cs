@@ -29,6 +29,11 @@ public class CameraController(IWorkerManager cameraWorkerManager, IHubContext<Ca
             {
                 Resolution = SupportedCameraProperties.GetResolutionById(selectedResolution),
                 Framerate = selectedFramerate,
+            },
+            MotionDetectionOptions = new MotionDetectionOptions
+            {
+                DownscaleFactor = 16,
+                MotionRatio = 0.01,
             }
         };
 

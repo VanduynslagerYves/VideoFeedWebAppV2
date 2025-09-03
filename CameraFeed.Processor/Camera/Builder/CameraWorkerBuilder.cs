@@ -1,5 +1,4 @@
 ﻿using CameraFeed.Processor.Camera.Worker;
-using CameraFeed.Processor.Camera.Worker;
 using CameraFeed.Processor.Services.gRPC;
 using Microsoft.AspNetCore.SignalR;
 
@@ -51,6 +50,11 @@ public class CameraWorkerBuilder(
             {
                 Resolution = _resolution,
                 Framerate = _framerate
+            },
+            MotionDetectionOptions = new MotionDetectionOptions
+            {
+                DownscaleFactor = 16,
+                MotionRatio = 0.01,
             }
         };
         
