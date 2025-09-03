@@ -10,7 +10,7 @@ This repository contains a multi-component system for video feed processing, obj
 ## Prerequisites
 
 - **.NET 9 SDK** (latest STS version)
-- **Python 3.10+**
+- **Python 3.10**
 - **Node.js and angular** (if using the angular frontend)
 - **ngrok** (optional, for public tunneling)
 - **NVIDIA GPU + CUDA Toolkit 12.1 or up** (for GPU-accelerated detection)
@@ -135,6 +135,3 @@ start_ngrok_api.cmd
 - **Development mode**: Set `ASPNETCORE_ENVIRONMENT=Development` for detailed error messages.
 ---
 
-## License
-See [CameraFeed.Web/wwwroot/lib/bootstrap/LICENSE](CameraFeed.Web/wwwroot/lib/bootstrap/LICENSE) for Bootstrap license.
----
