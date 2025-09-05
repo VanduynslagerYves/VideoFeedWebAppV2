@@ -45,6 +45,7 @@ public class CameraWorkerBuilder(
         var options = new WorkerOptions
         {
             CameraId = _cameraId,
+            CameraName = $"Camera {_cameraId}",
             Mode = InferenceMode.MotionBased,
             CameraOptions = new CameraOptions
             {

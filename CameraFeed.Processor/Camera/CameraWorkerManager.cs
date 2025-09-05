@@ -5,18 +5,21 @@ using System.Collections.Concurrent;
 
 namespace CameraFeed.Processor.Camera;
 
+[Obsolete("Use IWorkerService instead")]
 public interface IWorkerManager
 {
     Task<IActionResult> StartAsync(WorkerOptions options);
     Task<IActionResult> StopAsync(int cameraId);
 }
 
+[Obsolete("Use WorkerServiceBase instead")]
 public abstract class WorkerManagerBase : IWorkerManager
 {
     public abstract Task<IActionResult> StartAsync(WorkerOptions options);
     public abstract Task<IActionResult> StopAsync(int cameraId);
 }
 
+[Obsolete("Use CameraWorkerService instead")]
 public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogger<CameraWorkerManager> logger) : WorkerManagerBase
 {
     // Injected as singleton

@@ -1,4 +1,4 @@
-﻿@model CameraFeed.Web.ViewModels.CameraRequestViewModel
+﻿@model CameraFeed.Web.ViewModels.CameraListViewModel
 
 @{
     ViewData["Title"] = "Home Page";
@@ -9,24 +9,11 @@
 
 @if (User.Identity?.IsAuthenticated ?? false)
 {
-    @if (Model.FailList.Any())
-    {
-        var errorMessage = "The following cameras failed to start: "; @*TODO: build error string in the backend*@
-        <div class="alert alert-danger">
-            @foreach (var camId in Model.FailList)
-            {
-                errorMessage += $"{camId} ";
-            }
-            <strong>@errorMessage</strong>
-        </div>
-    }
-
     <div id="camsContainer">
-        @foreach (var cameraId in Model.SuccessList)
+        @foreach (var cameraId in Model.AvailableCameraIds)
         {
             @* TODO: appsettings.json *@
             <video-feed camera-id="@cameraId" hub-url="https://localhost:7214/videoHub"></video-feed>
-            @* width = "1280" height = "720" *@
             @* <video-feed camera-id="@camId" hub-url="https://pure-current-mastodon.ngrok-free.app/videoHub"></video-feed> *@
         }
     </div>

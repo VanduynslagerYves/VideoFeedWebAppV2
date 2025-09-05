@@ -1,7 +1,6 @@
 ﻿namespace CameraFeed.Web.ViewModels;
 
-public class CameraRequestViewModel
+public class CameraListViewModel
 {
-    public List<int> SuccessList { get; } = [];
-    public List<int> FailList { get; } = [];
+    public List<int> AvailableCameraIds { get; set; } = [];
 }

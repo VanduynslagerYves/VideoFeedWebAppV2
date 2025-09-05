@@ -1,5 +1,5 @@
 ﻿using CameraFeed.Processor.Camera;
-using CameraFeed.Processor.Camera.Worker;
+using CameraFeed.Processor.Services.CameraWorker;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -8,37 +8,45 @@ namespace CameraFeed.Processor.Controllers;
 
 [Route("api/camera")]
 [ApiController]
-public class CameraController(IWorkerManager cameraWorkerManager, IHubContext<CameraHub> hubContext, ILogger<CameraController> logger) : ControllerBase
+public class CameraController(IWorkerService cameraWorkerManager, IHubContext<CameraHub> hubContext, ILogger<CameraController> logger) : ControllerBase
 {
-    private readonly IWorkerManager _cameraWorkerManager = cameraWorkerManager; //singleton
+    private readonly IWorkerService _cameraWorkerManager = cameraWorkerManager; //singleton
     private readonly IHubContext<CameraHub> _hubContext = hubContext;
     private readonly ILogger<CameraController> _logger = logger;
 
+    //[Authorize]
+    //[HttpPost("startcam/{cameraId}")]
+    //public async Task<IActionResult> StartCameraAsync(int cameraId) //Add DTO for cameraId and cameraOptions and pass it down the line
+    //{
+    //    var selectedResolution = "720p"; //TODO: get from viewmodel or DTO
+    //    var selectedFramerate = 15; //TODO: get from viewmodel or DTO
+
+    //    var optioons = new WorkerOptions //TODO: get from viewmodel or DTO
+    //    {
+    //        CameraId = cameraId,
+    //        CameraName = $"Camera {cameraId}",
+    //        Mode = InferenceMode.MotionBased,
+    //        CameraOptions = new CameraOptions
+    //        {
+    //            Resolution = SupportedCameraProperties.GetResolutionById(selectedResolution),
+    //            Framerate = selectedFramerate,
+    //        },
+    //        MotionDetectionOptions = new MotionDetectionOptions
+    //        {
+    //            DownscaleFactor = 16,
+    //            MotionRatio = 0.005,
+    //        }
+    //    };
+
+    //    var result = await _cameraWorkerManager.StartAsync(optioons);
+    //    return result;
+    //}
+
     [Authorize]
-    [HttpPost("startcam/{cameraId}")]
-    public async Task<IActionResult> StartCamera(int cameraId) //Add DTO for cameraId and cameraOptions and pass it down the line
+    [HttpGet("active")]
+    public async Task<List<int>> GetAvailableCameraIdsAsync()
     {
-        var selectedResolution = "720p"; //TODO: get from viewmodel or DTO
-        var selectedFramerate = 15; //TODO: get from viewmodel or DTO
-
-        var optioons = new WorkerOptions //TODO: get from viewmodel or DTO
-        {
-            CameraId = cameraId,
-            Mode = InferenceMode.MotionBased,
-            CameraOptions = new CameraOptions
-            {
-                Resolution = SupportedCameraProperties.GetResolutionById(selectedResolution),
-                Framerate = selectedFramerate,
-            },
-            MotionDetectionOptions = new MotionDetectionOptions
-            {
-                DownscaleFactor = 16,
-                MotionRatio = 0.01,
-            }
-        };
-
-        var result = await _cameraWorkerManager.StartAsync(optioons);
-        return result;
+        return await _cameraWorkerManager.GetAvailableCameraIdsAsync();
     }
 
     //[AllowAnonymous]
@@ -53,13 +61,13 @@ public class CameraController(IWorkerManager cameraWorkerManager, IHubContext<Ca
     //    return Ok();
     //}
 
-    [Authorize]
-    [HttpPost("stopcam/{cameraId}")]
-    public async Task<IActionResult> StopCamera(int cameraId)
-    {
-        await _cameraWorkerManager.StopAsync(cameraId);
-        return Ok();
-    }
+    //[Authorize]
+    //[HttpPost("stopcam/{cameraId}")]
+    //public async Task<IActionResult> StopCamera(int cameraId)
+    //{
+    //    await _cameraWorkerManager.StopAsync(cameraId);
+    //    return Ok();
+    //}
 }
 
 public class PersonDetectedDto

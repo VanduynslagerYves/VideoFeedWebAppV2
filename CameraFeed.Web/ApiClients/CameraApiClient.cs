@@ -6,10 +6,9 @@ namespace CameraFeed.Web.ApiClients;
 
 public interface ICameraApiClient
 {
+    [Obsolete("Use GetAvailableCameraIdsAsync instead")]
     Task<CameraApiOperationResult?> StartCameraAsync(int cameraId);
-
-    [Obsolete("This method is deprecated and will be removed in future versions.")]
-    Task<List<int>?> GetAvailableCamerasAsync();
+    Task<List<int>?> GetAvailableCameraIdsAsync();
     void SetAccessToken(string accessToken);
 }
 
@@ -18,10 +17,10 @@ public abstract class CameraApiClientBase(IHttpClientFactory httpClientFactory) 
     protected readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     protected string? _accessToken;
 
+    [Obsolete("Use GetAvailableCameraIdsAsync instead")]
     public abstract Task<CameraApiOperationResult?> StartCameraAsync(int cameraId);
 
-    [Obsolete("This method is deprecated and will be removed in future versions.")]
-    public abstract Task<List<int>?> GetAvailableCamerasAsync();
+    public abstract Task<List<int>?> GetAvailableCameraIdsAsync();
 
     public void SetAccessToken(string accessToken)
     {
@@ -33,6 +32,7 @@ public class CameraApiClient(IHttpClientFactory httpClientFactory, ILogger<Camer
 {
     protected readonly ILogger<CameraApiClient> _logger = _logger;
 
+    [Obsolete("Use GetAvailableCameraIdsAsync instead")]
     public override async Task<CameraApiOperationResult?> StartCameraAsync(int cameraId)
     {
         using var httpClient = _httpClientFactory.CreateClient("CameraApi");
@@ -75,13 +75,12 @@ public class CameraApiClient(IHttpClientFactory httpClientFactory, ILogger<Camer
         }
     }
 
-    [Obsolete("This method is deprecated and will be removed in future versions.")]
-    public override async Task<List<int>?> GetAvailableCamerasAsync()
+    public override async Task<List<int>?> GetAvailableCameraIdsAsync()
     {
         using var httpClient = _httpClientFactory.CreateClient("CameraApi");
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
 
-        var request = new HttpRequestMessage(HttpMethod.Get, $"https://localhost:7214/api/camera/availablecams/");
+        var request = new HttpRequestMessage(HttpMethod.Get, $"https://localhost:7214/api/camera/active/");
 
         try
         {

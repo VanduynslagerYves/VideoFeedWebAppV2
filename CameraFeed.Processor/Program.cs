@@ -3,6 +3,7 @@ using CameraFeed.Processor.Services.HTTP;
 using CameraFeed.Processor.Camera;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using CameraFeed.Processor.Camera.Worker;
+using CameraFeed.Processor.Services.CameraWorker;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,23 +15,29 @@ builder.Services.AddHttpClient();
 //DI
 builder.Services.AddSingleton<IObjectDetectionGrpcClient, ObjectDetectionGrpcClient>();
 builder.Services.AddSingleton<IObjectDetectionHttpClient, ObjectDetectionHttpClient>();
-builder.Services.AddSingleton<IWorkerManager, CameraWorkerManager>();
 builder.Services.AddSingleton<ICameraWorkerFactory, CameraWorkerFactory>();
 builder.Services.AddSingleton<IVideoCaptureFactory, VideoCaptureFactory>();
 builder.Services.AddSingleton<IBackgroundSubtractorFactory, BackgroundSubtractorFactory>();
 
+//builder.Services.AddSingleton<IWorkerManager, CameraWorkerManager>();
+builder.Services.AddSingleton<CameraWorkerService>(); //Registers the concrete type as a singleton (needed for hosted service resolution).
+builder.Services.AddSingleton<IWorkerService>(sp => sp.GetRequiredService<CameraWorkerService>()); //Allows to inject the interface everywhere else, but both resolve to the same singleton instance.
+builder.Services.AddHostedService(sp => sp.GetRequiredService<CameraWorkerService>()); //Tells the hosted service system to use the singleton CameraWorkerManager instance.
+builder.Services.AddSingleton<ICameraWorkerInitializer, CameraWorkerInitializer>();
+
 builder.WebHost.UseKestrel();
+
+string[] frontendUrls = ["https://katacam-g7fchjfvhucgf8gq.northeurope-01.azurewebsites.net", "https://localhost:7006",
+            "https://localhost:44300",
+            "https://pure-current-mastodon.ngrok-free.app",
+            "https://localhost:4200", //angular client
+            "http://localhost:4200"];
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowWeb", policy =>
     {
-        policy.WithOrigins("https://katacam-g7fchjfvhucgf8gq.northeurope-01.azurewebsites.net",
-            "https://localhost:7006",
-            "https://localhost:44300",
-            "https://pure-current-mastodon.ngrok-free.app",
-            "https://localhost:4200",
-            "http://localhost:4200")//angular client
+        policy.WithOrigins(frontendUrls)
                .AllowAnyMethod()
                .AllowAnyHeader()
                .AllowCredentials();

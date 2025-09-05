@@ -11,6 +11,7 @@ public interface ICameraWorker
 {
     Task RunAsync(CancellationToken token);
     int CameraId { get; }
+    string Name { get; }
 }
 
 public abstract class CameraWorkerBase : ICameraWorker
@@ -40,6 +41,7 @@ public abstract class CameraWorkerBase : ICameraWorker
         _hubContext = hubContext;
 
         CameraId = options.CameraId;
+        Name = options.CameraName;
 
         //Setup motion detection parameters
         _downscaledHeight = options.CameraOptions.Resolution.Height / options.MotionDetectionOptions.DownscaleFactor;
@@ -51,6 +53,7 @@ public abstract class CameraWorkerBase : ICameraWorker
     protected string NotifyImageGroup => $"camera_{CameraId}";
 
     public int CameraId { get; }
+    public string Name { get; }
 
     public abstract Task RunAsync(CancellationToken token);
 }
@@ -113,8 +116,7 @@ public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptu
     public virtual async Task<byte[]> RunInference(byte[] frameData, CancellationToken cancellationToken = default)
     {
         // Call the gRPC object detection
-        byte[] processedFrame = await _objectDetectionClient.DetectObjectsAsync(frameData, cancellationToken);
-        return processedFrame;
+        return await _objectDetectionClient.DetectObjectsAsync(frameData, cancellationToken);
     }
 
     /// <summary>
@@ -158,11 +160,10 @@ public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptu
         return motionDetected;
     }
 
-    protected virtual byte[] ConvertFrameToByteArray(Mat frame, int quality = 70)
+    protected virtual byte[] ConvertFrameToByteArray(Mat frame, int quality = 78)
     {
         // Encode the Mat to JPEG directly into a byte array
-        var imageBytes = frame.ToImage<Bgr, byte>().ToJpegData(quality);
-        return imageBytes;
+        return frame.ToImage<Bgr, byte>().ToJpegData(quality);
     }
 
     protected virtual async Task SendFrameToClientsAsync(byte[] imageByteArray, CancellationToken token)
@@ -174,6 +175,7 @@ public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptu
 public class WorkerOptions
 {
     public required int CameraId { get; set; }
+    public required string CameraName { get; set; }
     public required InferenceMode Mode { get; set; }
     public required CameraOptions CameraOptions { get; set; }
     public required MotionDetectionOptions MotionDetectionOptions { get; set; }
