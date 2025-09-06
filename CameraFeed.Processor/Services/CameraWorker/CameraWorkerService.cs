@@ -1,5 +1,6 @@
 ﻿using CameraFeed.Processor.Camera;
 using CameraFeed.Processor.Camera.Worker;
+using CameraFeed.Processor.Repositories;
 using System.Collections.Concurrent;
 
 namespace CameraFeed.Processor.Services.CameraWorker;
@@ -27,6 +28,7 @@ public class CameraWorkerService(IServiceProvider serviceProvider, ICameraWorker
     {
         using var scope = _serviceProvider.CreateAsyncScope();
         var factory = scope.ServiceProvider.GetRequiredService<ICameraWorkerFactory>();
+        var cameraRepository = scope.ServiceProvider.GetRequiredService<ICameraRepository>(); //Should be workerRepository but it's not implemented yet.
 
         var cameraIds = new[] { 0, 1 }; //TODO: get from config or database (for state restore after service restart)
         //add and remove cameras can still happen through regular http calls.

@@ -1,4 +1,5 @@
 ﻿using CameraFeed.Processor.Camera;
+using CameraFeed.Processor.Repositories;
 using CameraFeed.Processor.Services.CameraWorker;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,11 +9,12 @@ namespace CameraFeed.Processor.Controllers;
 
 [Route("api/camera")]
 [ApiController]
-public class CameraController(IWorkerService cameraWorkerManager, IHubContext<CameraHub> hubContext, ILogger<CameraController> logger) : ControllerBase
+public class CameraController(IWorkerService cameraWorkerManager, IImageRepository imageRepository, IHubContext<CameraHub> hubContext, ILogger<CameraController> logger) : ControllerBase
 {
     private readonly IWorkerService _cameraWorkerManager = cameraWorkerManager; //singleton
     private readonly IHubContext<CameraHub> _hubContext = hubContext;
     private readonly ILogger<CameraController> _logger = logger;
+    private readonly IImageRepository _imageRepository = imageRepository;
 
     //[Authorize]
     //[HttpPost("startcam/{cameraId}")]

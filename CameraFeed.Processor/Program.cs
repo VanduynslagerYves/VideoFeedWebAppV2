@@ -1,9 +1,12 @@
+using CameraFeed.Processor.Camera;
+using CameraFeed.Processor.Camera.Worker;
+using CameraFeed.Processor.Data;
+using CameraFeed.Processor.Repositories;
+using CameraFeed.Processor.Services.CameraWorker;
 using CameraFeed.Processor.Services.gRPC;
 using CameraFeed.Processor.Services.HTTP;
-using CameraFeed.Processor.Camera;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using CameraFeed.Processor.Camera.Worker;
-using CameraFeed.Processor.Services.CameraWorker;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +15,10 @@ builder.Services.AddOpenApi();
 builder.Services.AddSignalR();
 builder.Services.AddHttpClient();
 
+builder.Services.AddDbContext<CamDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("CamDb")));
 //DI
+builder.Services.AddScoped<IImageRepository, ImageRepository>();
 builder.Services.AddSingleton<IObjectDetectionGrpcClient, ObjectDetectionGrpcClient>();
 builder.Services.AddSingleton<IObjectDetectionHttpClient, ObjectDetectionHttpClient>();
 builder.Services.AddSingleton<ICameraWorkerFactory, CameraWorkerFactory>();
