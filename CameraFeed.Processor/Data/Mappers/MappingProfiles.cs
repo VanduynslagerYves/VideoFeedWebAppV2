@@ -1,8 +1,7 @@
 ﻿using AutoMapper;
 using CameraFeed.Processor.Camera.Worker;
 using CameraFeed.Processor.Data.Models;
-using CameraFeed.Processor.Services.CameraWorker;
-using CameraFeed.Shared.DTO;
+using CameraFeed.Shared.DTOs;
 
 namespace CameraFeed.Processor.Data.Mappers;
 

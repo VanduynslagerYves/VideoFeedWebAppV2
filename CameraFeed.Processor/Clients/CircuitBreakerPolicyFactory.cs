@@ -2,7 +2,7 @@
 using Polly;
 using Polly.CircuitBreaker;
 
-namespace CameraFeed.Processor.Services;
+namespace CameraFeed.Processor.Clients;
 
 public static class CircuitBreakerPolicyFactory
 {
@@ -17,7 +17,7 @@ public static class CircuitBreakerPolicyFactory
                 durationOfBreak: options.BreakDuration,
                 onBreak: (ex, breakDelay) =>
                 {
-                    logger.LogWarning(ex, "Circuit breaker opened for {BreakDelay} seconds due to repeated gRPC failures.", breakDelay.TotalSeconds);
+                    logger.LogWarning("Circuit breaker opened for {BreakDelay} seconds due to repeated gRPC failures.", breakDelay.TotalSeconds);
                 },
                 onReset: () =>
                 {

@@ -1,4 +1,4 @@
-﻿namespace CameraFeed.Processor.DTO;
+﻿namespace CameraFeed.Processor.Data.DTOs;
 
 public class CameraOperationResultDto
 {

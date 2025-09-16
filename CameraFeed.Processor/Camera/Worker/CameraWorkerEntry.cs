@@ -1,8 +1,15 @@
-﻿using CameraFeed.Processor.Camera.Worker;
+﻿namespace CameraFeed.Processor.Camera.Worker;
 
-namespace CameraFeed.Processor.Services.CameraWorker;
+public interface IWorkerEntry
+{
+    ICameraWorker Worker { get; }
+    CancellationTokenSource Cts { get; }
+    Task? RunningTask { get; set; }
+    Task StartAsync();
+    Task StopAsync();
+}
 
-public abstract class WorkerEntry(ICameraWorker worker, CancellationTokenSource cts, Task? runningTask)
+public abstract class WorkerEntry(ICameraWorker worker, CancellationTokenSource cts, Task? runningTask) : IWorkerEntry
 {
     public ICameraWorker Worker { get; } = worker;
     public CancellationTokenSource Cts { get; } = cts;

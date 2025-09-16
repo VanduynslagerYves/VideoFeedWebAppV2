@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 
-namespace CameraFeed.Processor.Camera;
+namespace CameraFeed.Processor.Clients;
 
 /// <summary>
 /// Represents a SignalR hub for managing camera-related client connections and group memberships.

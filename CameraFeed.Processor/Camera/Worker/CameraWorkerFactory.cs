@@ -1,4 +1,5 @@
-﻿using CameraFeed.Processor.Services.gRPC;
+﻿using CameraFeed.Processor.Clients;
+using CameraFeed.Processor.Clients.gRPC;
 using Microsoft.AspNetCore.SignalR;
 
 namespace CameraFeed.Processor.Camera.Worker;

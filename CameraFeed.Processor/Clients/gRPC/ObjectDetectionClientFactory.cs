@@ -1,6 +1,6 @@
 ﻿using Grpc.Net.Client;
 
-namespace CameraFeed.Processor.Services.gRPC;
+namespace CameraFeed.Processor.Clients.gRPC;
 
 public static class ObjectDetectionClientFactory
 {

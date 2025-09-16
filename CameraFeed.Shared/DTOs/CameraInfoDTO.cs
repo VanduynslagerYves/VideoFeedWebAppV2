@@ -1,4 +1,4 @@
-﻿namespace CameraFeed.Shared.DTO;
+﻿namespace CameraFeed.Shared.DTOs;
 
 public class CameraInfoDTO
 {

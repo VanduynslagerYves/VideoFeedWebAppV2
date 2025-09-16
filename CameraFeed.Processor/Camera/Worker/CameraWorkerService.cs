@@ -1,17 +1,16 @@
 ﻿using AutoMapper;
-using CameraFeed.Processor.Camera.Worker;
 using CameraFeed.Processor.Repositories;
 
-namespace CameraFeed.Processor.Services.CameraWorker;
+namespace CameraFeed.Processor.Camera.Worker;
 
 public interface IWorkerService
 {
-    Task<List<WorkerEntry>> GetActiveCameraWorkerEntries();
+    Task<IEnumerable<IWorkerEntry>> GetActiveCameraWorkerEntries();
 }
 
 public abstract class WorkerServiceBase : IWorkerService
 {
-    public abstract Task<List<WorkerEntry>> GetActiveCameraWorkerEntries();
+    public abstract Task<IEnumerable<IWorkerEntry>> GetActiveCameraWorkerEntries();
 }
 
 public class CameraWorkerService(IServiceProvider serviceProvider, ICameraWorkerManager cameraInitializer, IMapper mapper, ILogger<CameraWorkerService> logger) : WorkerServiceBase, IHostedService
@@ -70,7 +69,7 @@ public class CameraWorkerService(IServiceProvider serviceProvider, ICameraWorker
         await _workerManager.StopAllAsync();
     }
 
-    public override async Task<List<WorkerEntry>> GetActiveCameraWorkerEntries()
+    public override async Task<IEnumerable<IWorkerEntry>> GetActiveCameraWorkerEntries()
     {
         return await _workerManager.GetActiveCameraWorkerEntries();
     }

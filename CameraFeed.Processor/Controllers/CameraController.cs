@@ -1,11 +1,11 @@
-﻿using AutoMapper;
-using CameraFeed.Processor.Camera;
-using CameraFeed.Processor.Repositories;
-using CameraFeed.Processor.Services.CameraWorker;
-using CameraFeed.Shared.DTO;
+﻿using CameraFeed.Processor.Repositories;
+using CameraFeed.Processor.Camera.Worker;
+using CameraFeed.Shared.DTOs;
+using CameraFeed.Processor.Clients;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using AutoMapper;
 
 namespace CameraFeed.Processor.Controllers;
 
@@ -22,7 +22,6 @@ public class CameraController(IWorkerService cameraWorkerService, IWorkerReposit
     [HttpGet("active")]
     public async Task<List<CameraInfoDTO>> GetActiveCameraIdsAsync()
     {
-        //TODO: return viewmodel with resolution.
         var activeWorkerentries = await _cameraWorkerService.GetActiveCameraWorkerEntries();
         var dtos = activeWorkerentries.Select(w => _mapper.Map<CameraInfoDTO>(w)).ToList();
         return dtos;
@@ -34,7 +33,6 @@ public class CameraController(IWorkerService cameraWorkerService, IWorkerReposit
     {
         var NotifyHumanDetectedGroup = $"camera_{dto.CameraId}_human_detected";
         await _hubContext.Clients.Group(NotifyHumanDetectedGroup).SendAsync("HumanDetected", dto.CameraId.ToString());
-
         return Ok();
     }
 

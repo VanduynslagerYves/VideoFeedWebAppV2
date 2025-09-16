@@ -1,12 +1,14 @@
 ﻿using System.Net.Http.Headers;
 
-namespace CameraFeed.Processor.Services.HTTP;
+namespace CameraFeed.Processor.Clients.HTTP;
 
+[Obsolete("Use GRPC client instead")]
 public interface IObjectDetectionHttpClient
 {
     Task<byte[]> DetectObjectsAsync(byte[] imageData, string cameraId);
 }
 
+[Obsolete("Use GRPC client instead")]
 public abstract class ObjectDetectionHttpClientBase(IHttpClientFactory httpClientFactory) : IObjectDetectionHttpClient
 {
     protected readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
@@ -15,6 +17,7 @@ public abstract class ObjectDetectionHttpClientBase(IHttpClientFactory httpClien
     public abstract Task<byte[]> DetectObjectsAsync(byte[] imageData, string cameraId);
 }
 
+[Obsolete("Use GRPC client instead")]
 public class ObjectDetectionHttpClient(IHttpClientFactory httpClientFactory, ILogger<ObjectDetectionHttpClient> logger) : ObjectDetectionHttpClientBase(httpClientFactory)
 {
     private readonly ILogger<ObjectDetectionHttpClient> _logger = logger;
@@ -24,12 +27,7 @@ public class ObjectDetectionHttpClient(IHttpClientFactory httpClientFactory, ILo
     public override async Task<byte[]> DetectObjectsAsync(byte[] imageData, string cameraId)
     {
         _requestCounter++; //TODO: use a healthcheck endpoint with a timer
-        if(!_apiAvailable && _requestCounter <= 300) //after 300 frames
-        {
-            //_logger.LogWarning("Object detection API is not available. Returning original image data.");
-            return imageData;
-        }
-
+        if (!_apiAvailable && _requestCounter <= 300) return imageData;//return original image data after 300 frames
         _requestCounter = 0;
 
         var request = new HttpRequestMessage(HttpMethod.Post, "http://127.0.0.1:8000/detect-objects/")

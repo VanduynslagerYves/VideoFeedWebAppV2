@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace CameraFeed.Processor.DTO;
+namespace CameraFeed.Processor.Data.DTOs;
 
 public static class ResponseMessages
 {

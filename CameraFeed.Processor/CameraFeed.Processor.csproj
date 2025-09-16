@@ -38,6 +38,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Protobuf Include="Services\gRPC\object_detection.proto" GrpcServices="Client" />
+		<Protobuf Include="Clients\gRPC\object_detection.proto" GrpcServices="Client" />
 	</ItemGroup>
 </Project>

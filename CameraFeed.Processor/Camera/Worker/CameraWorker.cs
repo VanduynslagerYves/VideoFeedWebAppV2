@@ -2,8 +2,9 @@
 using Emgu.CV.Structure;
 using Emgu.CV.CvEnum;
 using Microsoft.AspNetCore.SignalR;
-using CameraFeed.Processor.Services.gRPC;
+using CameraFeed.Processor.Clients.gRPC;
 using CameraFeed.Processor.Extensions;
+using CameraFeed.Processor.Clients;
 
 namespace CameraFeed.Processor.Camera.Worker;
 

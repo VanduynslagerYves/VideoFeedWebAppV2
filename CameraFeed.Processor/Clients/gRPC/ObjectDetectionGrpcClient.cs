@@ -3,7 +3,7 @@ using Grpc.Net.Client;
 using Grpc.Core;
 using Polly.CircuitBreaker;
 
-namespace CameraFeed.Processor.Services.gRPC;
+namespace CameraFeed.Processor.Clients.gRPC;
 
 public interface IObjectDetectionGrpcClient
 {
@@ -48,12 +48,12 @@ public class ObjectDetectionGrpcClient : IObjectDetectionGrpcClient, IDisposable
         }
         catch (RpcException ex)
         {
-            _logger.LogWarning(ex, "gRPC request failed when detecting objects.");
+            //_logger.LogWarning(ex, "gRPC request failed when detecting objects.");
             return imageData;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error when detecting objects via gRPC.");
+            //_logger.LogError(ex, "Unexpected error when detecting objects via gRPC.");
             return imageData;
         }
     }

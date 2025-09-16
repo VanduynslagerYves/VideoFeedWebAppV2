@@ -4,6 +4,12 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 	</PropertyGroup>
+	<ItemGroup>
+	  <Compile Remove="ViewModels\**" />
+	  <Content Remove="ViewModels\**" />
+	  <EmbeddedResource Remove="ViewModels\**" />
+	  <None Remove="ViewModels\**" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.3.0" />
@@ -13,7 +19,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="ViewModels\" />
 	  <Folder Include="wwwroot\images\" />
 	  <Folder Include="wwwroot\audio\" />
 	</ItemGroup>

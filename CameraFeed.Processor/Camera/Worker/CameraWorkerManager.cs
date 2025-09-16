@@ -1,21 +1,20 @@
-﻿using CameraFeed.Processor.Camera.Worker;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 
-namespace CameraFeed.Processor.Services.CameraWorker;
+namespace CameraFeed.Processor.Camera.Worker;
 
 public interface ICameraWorkerManager
 {
-    Task<WorkerEntry> CreateAsync(WorkerOptions options, CancellationToken cancellationToken);
-    Task<WorkerEntry> StartAsync(WorkerEntry workerEntry);
+    Task<IWorkerEntry> CreateAsync(WorkerOptions options, CancellationToken cancellationToken);
+    Task<IWorkerEntry> StartAsync(IWorkerEntry workerEntry);
     Task StopAllAsync();
-    Task<List<WorkerEntry>> GetActiveCameraWorkerEntries();
+    Task<List<IWorkerEntry>> GetActiveCameraWorkerEntries();
 }
 
 public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogger<CameraWorkerManager> logger) : ICameraWorkerManager
 {
-    private readonly ConcurrentDictionary<int, WorkerEntry> _workers = new();
+    private readonly ConcurrentDictionary<int, IWorkerEntry> _workers = new();
 
-    public async Task<WorkerEntry> CreateAsync(WorkerOptions options, CancellationToken cancellationToken)
+    public async Task<IWorkerEntry> CreateAsync(WorkerOptions options, CancellationToken cancellationToken)
     {
         if (_workers.TryGetValue(options.CameraOptions.Id, out var workerEntry)) return workerEntry;
 
@@ -27,7 +26,7 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogg
         return workerEntry;
     }
 
-    public async Task<WorkerEntry> StartAsync(WorkerEntry workerEntry)
+    public async Task<IWorkerEntry> StartAsync(IWorkerEntry workerEntry)
     {
         try
         {
@@ -58,7 +57,7 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogg
         }
     }
 
-    public Task<List<WorkerEntry>> GetActiveCameraWorkerEntries()
+    public Task<List<IWorkerEntry>> GetActiveCameraWorkerEntries()
     {
         var activeWorkers = _workers.Values.Where(w => w.RunningTask != null).ToList();
         return Task.FromResult(activeWorkers);

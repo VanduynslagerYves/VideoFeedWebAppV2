@@ -1,4 +1,4 @@
-﻿using CameraFeed.Shared.DTO;
+﻿using CameraFeed.Shared.DTOs;
 using CameraFeed.Web.ApiClients.ViewModels;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;

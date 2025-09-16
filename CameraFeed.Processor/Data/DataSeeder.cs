@@ -14,14 +14,12 @@ public static class DataSeeder
         if (await context.WorkerRecords.AnyAsync())
             return;
 
-        // Create resolutions
+        // Create and add resolutions
         var res1 = new ResolutionDbModel("1080p", 1920, 1080);
         var res2 = new ResolutionDbModel("720p", 1280, 720);
-
-        // Add resolutions
         context.Set<ResolutionDbModel>().AddRange(res1, res2);
 
-        // Create workers
+        // Create and add workers
         var worker1 = new WorkerDbModel
         {
             Id = Guid.NewGuid(),
