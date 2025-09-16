@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 
+//TODO: encapsulate logic in extension methods (see Processor project for examples)
 var builder = WebApplication.CreateBuilder(args);
 
 // Read authentication settings from appsettings
