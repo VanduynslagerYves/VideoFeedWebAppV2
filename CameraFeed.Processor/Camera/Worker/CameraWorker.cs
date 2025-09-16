@@ -10,7 +10,7 @@ namespace CameraFeed.Processor.Camera.Worker;
 public interface ICameraWorker
 {
     Task RunAsync(CancellationToken token);
-    int CameraId { get; }
+    int Id { get; }
     string Name { get; }
 }
 
@@ -40,8 +40,8 @@ public abstract class CameraWorkerBase : ICameraWorker
         _objectDetectionClient = objectDetectionClient;
         _hubContext = hubContext;
 
-        CameraId = options.CameraId;
-        Name = options.CameraName;
+        Id = options.CameraOptions.Id;
+        Name = options.CameraOptions.Name;
 
         //Setup motion detection parameters
         _downscaledHeight = options.CameraOptions.Resolution.Height / options.MotionDetectionOptions.DownscaleFactor;
@@ -50,9 +50,9 @@ public abstract class CameraWorkerBase : ICameraWorker
         _motionThreshold = (int)(downscaledArea * options.MotionDetectionOptions.MotionRatio);
     }
 
-    protected string NotifyImageGroup => $"camera_{CameraId}";
+    protected string NotifyImageGroup => $"camera_{Id}";
 
-    public int CameraId { get; }
+    public int Id { get; }
     public string Name { get; }
 
     public abstract Task RunAsync(CancellationToken token);
@@ -88,15 +88,15 @@ public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptu
         }
         catch(OperationCanceledException)
         {
-            _logger.LogInformation("CameraWorker for camera {cameraId} was cancelled.", CameraId);
+            _logger.LogInformation("CameraWorker for camera {cameraId} was cancelled.", Id);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred in CameraWorker for camera {cameraId}: {message}", CameraId, ex.Message);
+            _logger.LogError(ex, "An error occurred in CameraWorker for camera {cameraId}: {message}", Id, ex.Message);
         }
         finally
         {
-            _logger.LogInformation("CameraWorker for camera {cameraId} has stopped.", CameraId);
+            _logger.LogInformation("CameraWorker for camera {cameraId} has stopped.", Id);
         }
     }
 
@@ -174,15 +174,15 @@ public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptu
 
 public class WorkerOptions
 {
-    public required int CameraId { get; set; }
-    public required string CameraName { get; set; }
     public required InferenceMode Mode { get; set; }
-    public required CameraOptions CameraOptions { get; set; }
+    public required CameraProperties CameraOptions { get; set; }
     public required MotionDetectionOptions MotionDetectionOptions { get; set; }
 }
 
-public class CameraOptions
+public class CameraProperties
 {
+    public required int Id { get; set; }
+    public required string Name { get; set; }
     public required CameraResolution Resolution { get; set; }
     public required int Framerate { get; set; }
 }

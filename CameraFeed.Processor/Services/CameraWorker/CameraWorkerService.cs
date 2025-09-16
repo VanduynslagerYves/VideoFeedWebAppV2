@@ -1,4 +1,4 @@
-﻿using CameraFeed.Processor.Camera;
+﻿using AutoMapper;
 using CameraFeed.Processor.Camera.Worker;
 using CameraFeed.Processor.Repositories;
 using System.Collections.Concurrent;
@@ -17,103 +17,72 @@ public abstract class WorkerServiceBase : IWorkerService
     public abstract Task<List<int>> GetAvailableCameraIdsAsync();
 }
 
-public class CameraWorkerService(IServiceProvider serviceProvider, ICameraWorkerInitializer cameraInitializer, ILogger<CameraWorkerService> logger) : WorkerServiceBase, IHostedService
+public class CameraWorkerService(IServiceProvider serviceProvider, ICameraWorkerInitializer cameraInitializer, IMapper mapper, ILogger<CameraWorkerService> logger) : WorkerServiceBase, IHostedService
 {
     private readonly IServiceProvider _serviceProvider = serviceProvider;
     private readonly ILogger<CameraWorkerService> _logger = logger;
     private readonly ICameraWorkerInitializer _initializer = cameraInitializer;
-    private readonly ConcurrentDictionary<int, WorkerEntry> _availableWorkers = new();
+    private readonly ConcurrentDictionary<int, WorkerEntry> _workers = new();
+    private readonly IMapper _mapper = mapper;
 
+    /// <summary>
+    /// Starts the asynchronous initialization and execution of camera workers based on the enabled worker
+    /// configurations. This is used to automatically start the workers after a service restart.
+    /// </summary>
+    /// <remarks>This method retrieves the list of enabled workers from the database and initializes camera
+    /// workers for each configuration.</remarks>
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateAsyncScope();
         var factory = scope.ServiceProvider.GetRequiredService<ICameraWorkerFactory>();
-        var cameraRepository = scope.ServiceProvider.GetRequiredService<ICameraRepository>(); //Should be workerRepository but it's not implemented yet.
+        var workerRepository = scope.ServiceProvider.GetRequiredService<IWorkerRepository>();
 
-        var cameraIds = new[] { 0, 1 }; //TODO: get from config or database (for state restore after service restart)
-        //add and remove cameras can still happen through regular http calls.
+        var enabledWorkers = await workerRepository.GetEnabledWorkersAsync();
 
-        foreach (var id in cameraIds)
+        // Note:
+        // Using ParallelOptions with MaxDegreeOfParallelism limits the number of concurrent operations.
+        // This helps prevent resource exhaustion and balances system load, especially when initializing many workers.
+        var parallelOptions = new ParallelOptions
         {
-            var options = new WorkerOptions
-            {
-                CameraId = id,
-                CameraName = $"Camera {id}",
-                Mode = InferenceMode.MotionBased,
-                CameraOptions = new CameraOptions
-                {
-                    Resolution = SupportedCameraProperties.GetResolutionById("720p"),
-                    Framerate = 15,
-                },
-                MotionDetectionOptions = new MotionDetectionOptions
-                {
-                    DownscaleFactor = 16,
-                    MotionRatio = 0.005,
-                }
-            };
+            MaxDegreeOfParallelism = 4,
+            CancellationToken = cancellationToken
+        };
 
-            if (!_availableWorkers.ContainsKey(id))
+        // Note:
+        // Parallel.ForEachAsync allows multiple workers to be initialized concurrently.
+        // This significantly improves startup performance compared to sequential looping,
+        // as it reduces total initialization time and makes better use of available system resources.
+        await Parallel.ForEachAsync(enabledWorkers, parallelOptions, async (workerRecord, ct) =>
+        {
+            var options = _mapper.Map<WorkerOptions>(workerRecord);
+            if (!_workers.ContainsKey(workerRecord.CameraId))
             {
                 try
                 {
                     var workerEntry = await _initializer.CreateAndStartWorkerAsync(options, cancellationToken);
-                    _availableWorkers.TryAdd(id, workerEntry);
+                    _workers.TryAdd(workerRecord.CameraId, workerEntry); //TODO: save to db instead of in-memory dictionary
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Worker {CameraId} failed to initialize and will not be started by CameraWorkerService.", id);
+                    _logger.LogWarning(ex, "Worker {CameraId} failed to initialize and will not be started by CameraWorkerService.", workerRecord.CameraId);
                 }
             }
-        }
-    }
-
-    [Obsolete("This method is deprecated and will be removed in a later version")]
-    private async Task StartCameraWorkerAsync(WorkerEntry cameraWorkerEntry)
-    {
-        // If the worker is already running (i.e., RunningTask is not null), return a result indicating it's already started.
-        if (cameraWorkerEntry.RunningTask != null) return;
-        await StartCameraWorkerTaskAsync(cameraWorkerEntry);
-    }
-
-    [Obsolete("This method is deprecated and will be removed in a later version")]
-    private Task StartCameraWorkerTaskAsync(WorkerEntry cameraWorkerEntry)
-    {
-        // Only start the worker if it is not already running
-        if (cameraWorkerEntry.RunningTask == null)
-        {
-            var cameraId = cameraWorkerEntry.Worker.CameraId;
-            try
-            {
-                _logger.LogInformation("Starting worker {id}", cameraId);
-
-                cameraWorkerEntry.Start();
-
-                _logger.LogInformation("Worker {id} is running...", cameraId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to start camera worker {id}", cameraId);
-
-                // Remove the entry to keep the state clean
-                _availableWorkers.TryRemove(cameraId, out _);
-            }
-        }
-
-        return Task.CompletedTask;
+        });
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        foreach (var workerEntry in _availableWorkers.Values)
+        foreach (var workerEntry in _workers.Values)
         {
             workerEntry.Stop();
         }
         return Task.CompletedTask;
     }
 
+    //TODO: refactor so we get the list of active camera ids from the repository instead of the in-memory dictionary
     public override Task<List<int>> GetActiveCameraIdsAsync()
     {
-        var activeCameraIds = _availableWorkers
+        var activeCameraIds = _workers
             .Where(kvp => kvp.Value.RunningTask != null && !kvp.Value.RunningTask.IsCompleted)
             .Select(kvp => kvp.Key)
             .ToList();
@@ -123,7 +92,7 @@ public class CameraWorkerService(IServiceProvider serviceProvider, ICameraWorker
 
     public override Task<List<int>> GetAvailableCameraIdsAsync()
     {
-        var activeCameraIds = _availableWorkers.Select(x => x.Key).ToList();
+        var activeCameraIds = _workers.Select(x => x.Key).ToList();
         return Task.FromResult(activeCameraIds);
     }
 }

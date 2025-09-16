@@ -16,10 +16,10 @@ public class VideoCaptureFactory : IVideoCaptureFactory
         // Note: VideoCapture initialization can be blocking, so we offload it to a thread pool thread
         return Task.Run(() =>
         {
-            var videoCapture = new VideoCapture(options.CameraId);
+            var videoCapture = new VideoCapture(options.CameraOptions.Id);
 
             if (videoCapture == null || !videoCapture.IsOpened)
-                throw new InvalidOperationException($"Camera {options.CameraId} could not be initialized.");
+                throw new InvalidOperationException($"Camera {options.CameraOptions.Id} could not be initialized.");
 
             videoCapture.Set(CapProp.FrameWidth, options.CameraOptions.Resolution.Width);
             videoCapture.Set(CapProp.FrameHeight, options.CameraOptions.Resolution.Height);

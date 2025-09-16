@@ -18,11 +18,11 @@ public class CameraWorkerInitializer(ICameraWorkerFactory factory, ILogger<Camer
         try
         {
             workerEntry.Start();
-            logger.LogInformation("Worker {id} is running...", options.CameraId);
+            logger.LogInformation("Worker for {id} is running...", options.CameraOptions.Name);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to start camera worker {id}", options.CameraId);
+            logger.LogError(ex, "Failed to start worker for {id}", options.CameraOptions.Name);
             cts.Dispose();
             throw;
         }

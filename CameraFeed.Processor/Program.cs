@@ -1,6 +1,7 @@
 using CameraFeed.Processor.Camera;
 using CameraFeed.Processor.Camera.Worker;
 using CameraFeed.Processor.Data;
+using CameraFeed.Processor.Data.Mappers;
 using CameraFeed.Processor.Repositories;
 using CameraFeed.Processor.Services.CameraWorker;
 using CameraFeed.Processor.Services.gRPC;
@@ -18,7 +19,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddDbContext<CamDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("CamDb")));
 //DI
-builder.Services.AddScoped<IImageRepository, ImageRepository>();
+builder.Services.AddScoped<IWorkerRepository, WorkerRepository>();
 builder.Services.AddSingleton<IObjectDetectionGrpcClient, ObjectDetectionGrpcClient>();
 builder.Services.AddSingleton<IObjectDetectionHttpClient, ObjectDetectionHttpClient>();
 builder.Services.AddSingleton<ICameraWorkerFactory, CameraWorkerFactory>();
@@ -30,6 +31,8 @@ builder.Services.AddSingleton<CameraWorkerService>(); //Registers the concrete t
 builder.Services.AddSingleton<IWorkerService>(sp => sp.GetRequiredService<CameraWorkerService>()); //Allows to inject the interface everywhere else, but both resolve to the same singleton instance.
 builder.Services.AddHostedService(sp => sp.GetRequiredService<CameraWorkerService>()); //Tells the hosted service system to use the singleton CameraWorkerManager instance.
 builder.Services.AddSingleton<ICameraWorkerInitializer, CameraWorkerInitializer>();
+
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<WorkerMappingProfile>());
 
 builder.WebHost.UseKestrel();
 
@@ -92,5 +95,11 @@ app.UseAuthorization();
 app.MapHub<CameraHub>("/videoHub");
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<CamDbContext>();
+    await DataSeeder.SeedAsync(dbContext);
+}
 
 app.Run();

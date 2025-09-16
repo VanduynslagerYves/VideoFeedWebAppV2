@@ -1,5 +1,4 @@
 ﻿using CameraFeed.Processor.Camera;
-using CameraFeed.Processor.Repositories;
 using CameraFeed.Processor.Services.CameraWorker;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,12 +8,19 @@ namespace CameraFeed.Processor.Controllers;
 
 [Route("api/camera")]
 [ApiController]
-public class CameraController(IWorkerService cameraWorkerManager, IImageRepository imageRepository, IHubContext<CameraHub> hubContext, ILogger<CameraController> logger) : ControllerBase
+public class CameraController(IWorkerService cameraWorkerService, IHubContext<CameraHub> hubContext, ILogger<CameraController> logger) : ControllerBase
 {
-    private readonly IWorkerService _cameraWorkerManager = cameraWorkerManager; //singleton
+    private readonly IWorkerService _cameraWorkerService = cameraWorkerService; //singleton
     private readonly IHubContext<CameraHub> _hubContext = hubContext;
     private readonly ILogger<CameraController> _logger = logger;
-    private readonly IImageRepository _imageRepository = imageRepository;
+
+    [Authorize]
+    [HttpGet("active")]
+    public async Task<List<int>> GetActiveCameraIdsAsync()
+    {
+        //TODO: return viewmodel with resolution.
+        return await _cameraWorkerService.GetActiveCameraIdsAsync();
+    }
 
     //[Authorize]
     //[HttpPost("startcam/{cameraId}")]
@@ -44,24 +50,15 @@ public class CameraController(IWorkerService cameraWorkerManager, IImageReposito
     //    return result;
     //}
 
-    [Authorize]
-    [HttpGet("active")]
-    public async Task<List<int>> GetAvailableCameraIdsAsync()
+    [AllowAnonymous]
+    [HttpPost("person-detected")]
+    public async Task<IActionResult> PersonDetected([FromBody] PersonDetectedDto dto)
     {
-        return await _cameraWorkerManager.GetAvailableCameraIdsAsync();
+        var NotifyHumanDetectedGroup = $"camera_{dto.CameraId}_human_detected";
+        await _hubContext.Clients.Group(NotifyHumanDetectedGroup).SendAsync("HumanDetected", dto.CameraId.ToString());
+
+        return Ok();
     }
-
-    //[AllowAnonymous]
-    //[HttpPost("person-detected")]
-    //public async Task<IActionResult> PersonDetected([FromBody] PersonDetectedDto dto)
-    //{
-    //    var NotifyHumanDetectedGroup = $"camera_{dto.CameraId}_human_detected";
-
-    //    //Do stuff
-    //    //await _hubContext.Clients.Group(NotifyHumanDetectedGroup).SendAsync("HumanDetected", dto.CameraId.ToString());
-
-    //    return Ok();
-    //}
 
     //[Authorize]
     //[HttpPost("stopcam/{cameraId}")]
