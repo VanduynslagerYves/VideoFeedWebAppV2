@@ -3,13 +3,12 @@
 app.component('video-feed', {
     props: {
         cameraId: String,
+        cameraName: String,
         hubUrl: String,
-        //width: [String, Number],
-        //height: [String, Number],
     },
     template: `
         <div class="cambox">
-            <h3>Camera {{ cameraId }}</h3>
+            <h3>{{ cameraName }}</h3>
             <canvas :ref="cameraId" width="1280" height="720"></canvas>
         </div>
     `,

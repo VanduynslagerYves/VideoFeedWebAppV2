@@ -1,4 +1,4 @@
-﻿@model CameraFeed.Web.ViewModels.CameraListViewModel
+﻿@model List<CameraFeed.Shared.DTO.CameraInfoDTO>
 
 @{
     ViewData["Title"] = "Home Page";
@@ -10,10 +10,10 @@
 @if (User.Identity?.IsAuthenticated ?? false)
 {
     <div id="camsContainer">
-        @foreach (var cameraId in Model.AvailableCameraIds)
+        @foreach (var camera in Model)
         {
             @* TODO: appsettings.json *@
-            <video-feed camera-id="@cameraId" hub-url="https://localhost:7214/videoHub"></video-feed>
+            <video-feed camera-id="@camera.Id" camera-name="@camera.Name" hub-url="https://localhost:7214/videoHub"></video-feed>
         }
     </div>
 }

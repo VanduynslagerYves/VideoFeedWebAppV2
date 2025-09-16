@@ -10,8 +10,10 @@ namespace CameraFeed.Processor.Camera.Worker;
 public interface ICameraWorker
 {
     Task RunAsync(CancellationToken token);
-    int Id { get; }
-    string Name { get; }
+    int CamId { get; }
+    string CamName { get; }
+    int CamWidth { get; }
+    int CamHeight { get; }
 }
 
 public abstract class CameraWorkerBase : ICameraWorker
@@ -40,8 +42,10 @@ public abstract class CameraWorkerBase : ICameraWorker
         _objectDetectionClient = objectDetectionClient;
         _hubContext = hubContext;
 
-        Id = options.CameraOptions.Id;
-        Name = options.CameraOptions.Name;
+        CamId = options.CameraOptions.Id;
+        CamName = options.CameraOptions.Name;
+        CamWidth = options.CameraOptions.Resolution.Width;
+        CamHeight = options.CameraOptions.Resolution.Height;
 
         //Setup motion detection parameters
         _downscaledHeight = options.CameraOptions.Resolution.Height / options.MotionDetectionOptions.DownscaleFactor;
@@ -50,10 +54,12 @@ public abstract class CameraWorkerBase : ICameraWorker
         _motionThreshold = (int)(downscaledArea * options.MotionDetectionOptions.MotionRatio);
     }
 
-    protected string NotifyImageGroup => $"camera_{Id}";
+    protected string NotifyImageGroup => $"camera_{CamId}";
 
-    public int Id { get; }
-    public string Name { get; }
+    public int CamId { get; }
+    public string CamName { get; }
+    public int CamWidth { get; }
+    public int CamHeight { get; }
 
     public abstract Task RunAsync(CancellationToken token);
 }
@@ -88,15 +94,15 @@ public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptu
         }
         catch(OperationCanceledException)
         {
-            _logger.LogInformation("CameraWorker for camera {cameraId} was cancelled.", Id);
+            _logger.LogInformation("CameraWorker for camera {cameraId} was cancelled.", CamId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred in CameraWorker for camera {cameraId}: {message}", Id, ex.Message);
+            _logger.LogError(ex, "An error occurred in CameraWorker for camera {cameraId}: {message}", CamId, ex.Message);
         }
         finally
         {
-            _logger.LogInformation("CameraWorker for camera {cameraId} has stopped.", Id);
+            _logger.LogInformation("CameraWorker for camera {cameraId} has stopped.", CamId);
         }
     }
 

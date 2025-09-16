@@ -26,13 +26,13 @@ builder.Services.AddSingleton<ICameraWorkerFactory, CameraWorkerFactory>();
 builder.Services.AddSingleton<IVideoCaptureFactory, VideoCaptureFactory>();
 builder.Services.AddSingleton<IBackgroundSubtractorFactory, BackgroundSubtractorFactory>();
 
-//builder.Services.AddSingleton<IWorkerManager, CameraWorkerManager>();
 builder.Services.AddSingleton<CameraWorkerService>(); //Registers the concrete type as a singleton (needed for hosted service resolution).
 builder.Services.AddSingleton<IWorkerService>(sp => sp.GetRequiredService<CameraWorkerService>()); //Allows to inject the interface everywhere else, but both resolve to the same singleton instance.
 builder.Services.AddHostedService(sp => sp.GetRequiredService<CameraWorkerService>()); //Tells the hosted service system to use the singleton CameraWorkerManager instance.
-builder.Services.AddSingleton<ICameraWorkerInitializer, CameraWorkerInitializer>();
+builder.Services.AddSingleton<ICameraWorkerManager, CameraWorkerManager>();
 
-builder.Services.AddAutoMapper(cfg => cfg.AddProfile<WorkerMappingProfile>());
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<WorkerOptionsMappingProfile>());
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<CameraInfoDtoMappingProfile>());
 
 builder.WebHost.UseKestrel();
 
@@ -52,17 +52,6 @@ builder.Services.AddCors(options =>
                .AllowCredentials();
     });
 });
-
-//builder.Services.AddCors(options =>
-//{
-//    options.AddPolicy("AllowAngularClient", policy =>
-//    {
-//        policy.WithOrigins("http://localhost:4200") // Move these to appsettings.json
-//              .AllowAnyMethod()
-//              .AllowAnyHeader()
-//              .AllowCredentials();
-//    });
-//});
 
 //Add Authentication Services (validation for JWT tokens)
 builder.Services.AddAuthentication(options =>

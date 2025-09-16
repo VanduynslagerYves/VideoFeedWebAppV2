@@ -34,6 +34,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\CameraFeed.Shared\CameraFeed.Shared.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Protobuf Include="Services\gRPC\object_detection.proto" GrpcServices="Client" />
 	</ItemGroup>
 </Project>

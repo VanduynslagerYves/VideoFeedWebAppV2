@@ -1,4 +1,5 @@
-﻿using CameraFeed.Web.ApiClients.ViewModels;
+﻿using CameraFeed.Shared.DTO;
+using CameraFeed.Web.ApiClients.ViewModels;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
 
@@ -8,7 +9,7 @@ public interface ICameraApiClient
 {
     [Obsolete("Use GetAvailableCameraIdsAsync instead")]
     Task<CameraApiOperationResult?> StartCameraAsync(int cameraId);
-    Task<List<int>?> GetAvailableCameraIdsAsync();
+    Task<List<CameraInfoDTO>?> GetActiveCamerasAsync();
     void SetAccessToken(string accessToken);
 }
 
@@ -20,7 +21,7 @@ public abstract class CameraApiClientBase(IHttpClientFactory httpClientFactory) 
     [Obsolete("Use GetAvailableCameraIdsAsync instead")]
     public abstract Task<CameraApiOperationResult?> StartCameraAsync(int cameraId);
 
-    public abstract Task<List<int>?> GetAvailableCameraIdsAsync();
+    public abstract Task<List<CameraInfoDTO>?> GetActiveCamerasAsync();
 
     public void SetAccessToken(string accessToken)
     {
@@ -75,7 +76,7 @@ public class CameraApiClient(IHttpClientFactory httpClientFactory, ILogger<Camer
         }
     }
 
-    public override async Task<List<int>?> GetAvailableCameraIdsAsync()
+    public override async Task<List<CameraInfoDTO>?> GetActiveCamerasAsync()
     {
         using var httpClient = _httpClientFactory.CreateClient("CameraApi");
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
@@ -87,7 +88,7 @@ public class CameraApiClient(IHttpClientFactory httpClientFactory, ILogger<Camer
             var response = await httpClient.SendAsync(request);
 
             var responseString = await response.Content.ReadAsStringAsync();
-            var responseObject = JsonConvert.DeserializeObject<List<int>>(responseString);
+            var responseObject = JsonConvert.DeserializeObject<List<CameraInfoDTO>>(responseString);
 
             if (responseObject is null)
             {

@@ -1,28 +1,24 @@
 ﻿using AutoMapper;
 using CameraFeed.Processor.Camera.Worker;
 using CameraFeed.Processor.Repositories;
-using System.Collections.Concurrent;
 
 namespace CameraFeed.Processor.Services.CameraWorker;
 
 public interface IWorkerService
 {
-    Task<List<int>> GetActiveCameraIdsAsync();
-    Task<List<int>> GetAvailableCameraIdsAsync();
+    Task<List<WorkerEntry>> GetActiveCameraWorkerEntries();
 }
 
 public abstract class WorkerServiceBase : IWorkerService
 {
-    public abstract Task<List<int>> GetActiveCameraIdsAsync();
-    public abstract Task<List<int>> GetAvailableCameraIdsAsync();
+    public abstract Task<List<WorkerEntry>> GetActiveCameraWorkerEntries();
 }
 
-public class CameraWorkerService(IServiceProvider serviceProvider, ICameraWorkerInitializer cameraInitializer, IMapper mapper, ILogger<CameraWorkerService> logger) : WorkerServiceBase, IHostedService
+public class CameraWorkerService(IServiceProvider serviceProvider, ICameraWorkerManager cameraInitializer, IMapper mapper, ILogger<CameraWorkerService> logger) : WorkerServiceBase, IHostedService
 {
     private readonly IServiceProvider _serviceProvider = serviceProvider;
     private readonly ILogger<CameraWorkerService> _logger = logger;
-    private readonly ICameraWorkerInitializer _initializer = cameraInitializer;
-    private readonly ConcurrentDictionary<int, WorkerEntry> _workers = new();
+    private readonly ICameraWorkerManager _workerManager = cameraInitializer;
     private readonly IMapper _mapper = mapper;
 
     /// <summary>
@@ -38,6 +34,7 @@ public class CameraWorkerService(IServiceProvider serviceProvider, ICameraWorker
         var workerRepository = scope.ServiceProvider.GetRequiredService<IWorkerRepository>();
 
         var enabledWorkers = await workerRepository.GetEnabledWorkersAsync();
+        if (enabledWorkers.Count == 0) return;
 
         // Note:
         // Using ParallelOptions with MaxDegreeOfParallelism limits the number of concurrent operations.
@@ -55,44 +52,26 @@ public class CameraWorkerService(IServiceProvider serviceProvider, ICameraWorker
         await Parallel.ForEachAsync(enabledWorkers, parallelOptions, async (workerRecord, ct) =>
         {
             var options = _mapper.Map<WorkerOptions>(workerRecord);
-            if (!_workers.ContainsKey(workerRecord.CameraId))
+
+            try
             {
-                try
-                {
-                    var workerEntry = await _initializer.CreateAndStartWorkerAsync(options, cancellationToken);
-                    _workers.TryAdd(workerRecord.CameraId, workerEntry); //TODO: save to db instead of in-memory dictionary
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Worker {CameraId} failed to initialize and will not be started by CameraWorkerService.", workerRecord.CameraId);
-                }
+                var workerEntry = await _workerManager.CreateAsync(options, cancellationToken);
+                if(workerEntry.RunningTask == null) await _workerManager.StartAsync(workerEntry);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Worker {CameraId} failed to initialize and will not be started by CameraWorkerService.", workerRecord.CameraId);
             }
         });
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
+    public async Task StopAsync(CancellationToken cancellationToken)
     {
-        foreach (var workerEntry in _workers.Values)
-        {
-            workerEntry.Stop();
-        }
-        return Task.CompletedTask;
+        await _workerManager.StopAllAsync();
     }
 
-    //TODO: refactor so we get the list of active camera ids from the repository instead of the in-memory dictionary
-    public override Task<List<int>> GetActiveCameraIdsAsync()
+    public override async Task<List<WorkerEntry>> GetActiveCameraWorkerEntries()
     {
-        var activeCameraIds = _workers
-            .Where(kvp => kvp.Value.RunningTask != null && !kvp.Value.RunningTask.IsCompleted)
-            .Select(kvp => kvp.Key)
-            .ToList();
-
-        return Task.FromResult(activeCameraIds);
-    }
-
-    public override Task<List<int>> GetAvailableCameraIdsAsync()
-    {
-        var activeCameraIds = _workers.Select(x => x.Key).ToList();
-        return Task.FromResult(activeCameraIds);
+        return await _workerManager.GetActiveCameraWorkerEntries();
     }
 }

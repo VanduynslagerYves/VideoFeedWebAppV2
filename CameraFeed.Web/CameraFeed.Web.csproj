@@ -13,7 +13,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Folder Include="ViewModels\" />
 	  <Folder Include="wwwroot\images\" />
 	  <Folder Include="wwwroot\audio\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\CameraFeed.Shared\CameraFeed.Shared.csproj" />
 	</ItemGroup>
 </Project>

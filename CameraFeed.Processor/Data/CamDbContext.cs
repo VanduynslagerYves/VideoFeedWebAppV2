@@ -1,19 +1,20 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using CameraFeed.Processor.Data.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CameraFeed.Processor.Data;
 
 public class CamDbContext(DbContextOptions<CamDbContext> options) : DbContext(options)
 {
-    public DbSet<WorkerRecord> WorkerRecords { get; set; }
+    public DbSet<WorkerDbModel> WorkerRecords { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<WorkerRecord>(MapWorkerRecord);
-        modelBuilder.Entity<ResolutionRecord>(MapResolutionRecord);
+        modelBuilder.Entity<WorkerDbModel>(MapWorkerRecord);
+        modelBuilder.Entity<ResolutionDbModel>(MapResolutionRecord);
     }
 
-    protected static void MapWorkerRecord(EntityTypeBuilder<WorkerRecord> recordBuilder)
+    protected static void MapWorkerRecord(EntityTypeBuilder<WorkerDbModel> recordBuilder)
     {
         recordBuilder.ToTable("worker").HasKey(x => x.Id);
         recordBuilder.Property(x => x.Id).ValueGeneratedOnAdd();
@@ -33,7 +34,7 @@ public class CamDbContext(DbContextOptions<CamDbContext> options) : DbContext(op
         recordBuilder.HasIndex(x => x.CameraId).IsUnique();
     }
 
-    protected static void MapResolutionRecord(EntityTypeBuilder<ResolutionRecord> recordBuilder)
+    protected static void MapResolutionRecord(EntityTypeBuilder<ResolutionDbModel> recordBuilder)
     {
         recordBuilder.ToTable("resolution").HasKey(x => x.Id);
         recordBuilder.Property(x => x.Id).ValueGeneratedOnAdd();
@@ -44,20 +45,3 @@ public class CamDbContext(DbContextOptions<CamDbContext> options) : DbContext(op
         recordBuilder.HasIndex(x => new { x.Width, x.Height }).IsUnique();
     }
 }
-
-public class WorkerRecord
-{
-    public Guid Id { get; set; }
-    public required string Name { get; set; }
-    public required int CameraId { get; set; }
-    public required bool Enabled { get; set; }
-    public required int Framerate { get; set; }
-    public required bool UseMotiondetection { get; set; }
-    public required int DownscaleRatio { get; set; }
-    public required double MotionRatio { get; set; }
-
-    public required string ResolutionId { get; set; }
-    public required ResolutionRecord Resolution { get; set; }
-}
-
-public record ResolutionRecord(string Id, int Width, int Height);

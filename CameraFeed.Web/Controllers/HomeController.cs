@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using CameraFeed.Web.Models;
 using CameraFeed.Web.ApiClients;
-using CameraFeed.Web.ViewModels;
 
 namespace CameraFeed.Web.Controllers;
 
@@ -19,13 +18,8 @@ public class HomeController(ICameraApiClient cameraApiClient) : Controller
         var accessToken = await HttpContext.GetTokenAsync(ACCESS_TOKEN);
         if (!string.IsNullOrEmpty(accessToken)) _cameraApiClient.SetAccessToken(accessToken);
 
-        var availableCameraIds = await _cameraApiClient.GetAvailableCameraIdsAsync();
-        var model = new CameraListViewModel
-        {
-            AvailableCameraIds = availableCameraIds ?? []
-        };
-
-        return View(model);
+        var cameraInfoListDTO = await _cameraApiClient.GetActiveCamerasAsync();
+        return View(cameraInfoListDTO);
     }
 
     [AllowAnonymous]
