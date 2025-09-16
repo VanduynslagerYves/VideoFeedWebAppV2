@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using CameraFeed.Web.Models;
 using CameraFeed.Web.ApiClients;
-using CameraFeed.Web.ViewModels;
 
 namespace CameraFeed.Web.Controllers;
 
@@ -19,29 +18,8 @@ public class HomeController(ICameraApiClient cameraApiClient) : Controller
         var accessToken = await HttpContext.GetTokenAsync(ACCESS_TOKEN);
         if (!string.IsNullOrEmpty(accessToken)) _cameraApiClient.SetAccessToken(accessToken);
 
-        var selectedCameraIds = new List<int> { 0, 1 }; //TODO: Get selected cameras from user selection, 2 does not exist, so it will not start
-        var cameraRequestViewModel = new CameraRequestViewModel();
-
-        foreach (var cameraId in selectedCameraIds)
-        {
-            var result = await _cameraApiClient.StartCameraAsync(cameraId);
-            if (result == null) //something went wrong if result is null
-            {
-                cameraRequestViewModel.FailList.Add(cameraId);
-                continue;
-            }
-
-            if (result.Success)
-            {
-                cameraRequestViewModel.SuccessList.Add(cameraId); //we should also send the message in the result to the viewmodel
-            }
-            else
-            {
-                cameraRequestViewModel.FailList.Add(cameraId);
-            }
-        }
-
-        return View(cameraRequestViewModel);
+        var cameraInfoListDTO = await _cameraApiClient.GetActiveCamerasAsync();
+        return View(cameraInfoListDTO);
     }
 
     [AllowAnonymous]

@@ -10,7 +10,10 @@ namespace CameraFeed.Processor.Camera.Worker;
 public interface ICameraWorker
 {
     Task RunAsync(CancellationToken token);
-    int CameraId { get; }
+    int CamId { get; }
+    string CamName { get; }
+    int CamWidth { get; }
+    int CamHeight { get; }
 }
 
 public abstract class CameraWorkerBase : ICameraWorker
@@ -39,7 +42,10 @@ public abstract class CameraWorkerBase : ICameraWorker
         _objectDetectionClient = objectDetectionClient;
         _hubContext = hubContext;
 
-        CameraId = options.CameraId;
+        CamId = options.CameraOptions.Id;
+        CamName = options.CameraOptions.Name;
+        CamWidth = options.CameraOptions.Resolution.Width;
+        CamHeight = options.CameraOptions.Resolution.Height;
 
         //Setup motion detection parameters
         _downscaledHeight = options.CameraOptions.Resolution.Height / options.MotionDetectionOptions.DownscaleFactor;
@@ -48,9 +54,12 @@ public abstract class CameraWorkerBase : ICameraWorker
         _motionThreshold = (int)(downscaledArea * options.MotionDetectionOptions.MotionRatio);
     }
 
-    protected string NotifyImageGroup => $"camera_{CameraId}";
+    protected string NotifyImageGroup => $"camera_{CamId}";
 
-    public int CameraId { get; }
+    public int CamId { get; }
+    public string CamName { get; }
+    public int CamWidth { get; }
+    public int CamHeight { get; }
 
     public abstract Task RunAsync(CancellationToken token);
 }
@@ -85,15 +94,15 @@ public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptu
         }
         catch(OperationCanceledException)
         {
-            _logger.LogInformation("CameraWorker for camera {cameraId} was cancelled.", CameraId);
+            _logger.LogInformation("CameraWorker for camera {cameraId} was cancelled.", CamId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred in CameraWorker for camera {cameraId}: {message}", CameraId, ex.Message);
+            _logger.LogError(ex, "An error occurred in CameraWorker for camera {cameraId}: {message}", CamId, ex.Message);
         }
         finally
         {
-            _logger.LogInformation("CameraWorker for camera {cameraId} has stopped.", CameraId);
+            _logger.LogInformation("CameraWorker for camera {cameraId} has stopped.", CamId);
         }
     }
 
@@ -113,8 +122,7 @@ public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptu
     public virtual async Task<byte[]> RunInference(byte[] frameData, CancellationToken cancellationToken = default)
     {
         // Call the gRPC object detection
-        byte[] processedFrame = await _objectDetectionClient.DetectObjectsAsync(frameData, cancellationToken);
-        return processedFrame;
+        return await _objectDetectionClient.DetectObjectsAsync(frameData, cancellationToken);
     }
 
     /// <summary>
@@ -158,11 +166,10 @@ public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptu
         return motionDetected;
     }
 
-    protected virtual byte[] ConvertFrameToByteArray(Mat frame, int quality = 70)
+    protected virtual byte[] ConvertFrameToByteArray(Mat frame, int quality = 78)
     {
         // Encode the Mat to JPEG directly into a byte array
-        var imageBytes = frame.ToImage<Bgr, byte>().ToJpegData(quality);
-        return imageBytes;
+        return frame.ToImage<Bgr, byte>().ToJpegData(quality);
     }
 
     protected virtual async Task SendFrameToClientsAsync(byte[] imageByteArray, CancellationToken token)
@@ -173,14 +180,15 @@ public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptu
 
 public class WorkerOptions
 {
-    public required int CameraId { get; set; }
     public required InferenceMode Mode { get; set; }
-    public required CameraOptions CameraOptions { get; set; }
+    public required CameraProperties CameraOptions { get; set; }
     public required MotionDetectionOptions MotionDetectionOptions { get; set; }
 }
 
-public class CameraOptions
+public class CameraProperties
 {
+    public required int Id { get; set; }
+    public required string Name { get; set; }
     public required CameraResolution Resolution { get; set; }
     public required int Framerate { get; set; }
 }
