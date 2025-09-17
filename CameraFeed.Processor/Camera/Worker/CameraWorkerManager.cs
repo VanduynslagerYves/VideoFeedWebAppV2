@@ -1,65 +1,104 @@
-﻿using System.Collections.Concurrent;
+﻿using AutoMapper;
+using CameraFeed.Shared.DTOs;
+using System.Collections.Concurrent;
 
 namespace CameraFeed.Processor.Camera.Worker;
 
 public interface ICameraWorkerManager
 {
-    Task<IWorkerEntry> CreateAsync(WorkerProperties options, CancellationToken cancellationToken);
-    Task<IWorkerEntry> StartAsync(IWorkerEntry workerEntry);
+    Task<IWorkerHandle> CreateAsync(WorkerProperties options, CancellationToken cancellationToken);
+    Task<IWorkerHandle> StartAsync(IWorkerHandle workerEntry);
+    Task StopAsync(int cameraId);
     Task StopAllAsync();
-    Task<List<IWorkerEntry>> GetActiveCameraWorkerEntries();
+    IEnumerable<CameraInfoDTO> GetWorkerDtos(bool isActive = true);
+    IEnumerable<int> GetWorkerIds(bool isActive = true);
 }
 
-public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogger<CameraWorkerManager> logger) : ICameraWorkerManager
+public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, IMapper mapper, ILogger<CameraWorkerManager> logger) : ICameraWorkerManager
 {
-    private readonly ConcurrentDictionary<int, IWorkerEntry> _workers = new();
+    private readonly ConcurrentDictionary<int, IWorkerHandle> _workerHandles = new();
+    private readonly ICameraWorkerFactory _cameraWorkerFactory = cameraWorkerFactory;
+    private readonly IMapper _mapper = mapper;
 
-    public async Task<IWorkerEntry> CreateAsync(WorkerProperties options, CancellationToken cancellationToken)
+    public async Task<IWorkerHandle> CreateAsync(WorkerProperties options, CancellationToken cancellationToken)
     {
-        if (_workers.TryGetValue(options.CameraOptions.Id, out var workerEntry)) return workerEntry;
+        if (_workerHandles.TryGetValue(options.CameraOptions.Id, out var workerHandle)) return workerHandle; // Return existing worker ID if already exists
 
         var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var worker = await cameraWorkerFactory.CreateAsync(options);
-        workerEntry = new CameraWorkerEntry(worker, cts, null);
-        _workers.TryAdd(worker.CamId, workerEntry);
+        var worker = await _cameraWorkerFactory.CreateAsync(options);
+        workerHandle = new CameraWorkerHandle(worker, cts, null);
+        _workerHandles.TryAdd(worker.CamId, workerHandle); // Add the new worker entry to the dictionary
 
-        return workerEntry;
+        return workerHandle; // Return the camera ID of the newly created worker
     }
 
-    public async Task<IWorkerEntry> StartAsync(IWorkerEntry workerEntry)
+    public async Task<IWorkerHandle> StartAsync(IWorkerHandle workerHandle)
     {
         try
         {
-            await workerEntry.StartAsync();
-            logger.LogInformation("Worker for {id} is running...", workerEntry.Worker.CamName);
+            await workerHandle.StartAsync();
+            logger.LogInformation("Worker for {id} is running...", workerHandle.Worker.CamName);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to start worker for {id}", workerEntry.Worker.CamName);
+            logger.LogError(ex, "Failed to start worker for {id}", workerHandle.Worker.CamName);
         }
 
-        return workerEntry;
+        return workerHandle;
+    }
+
+    public async Task StopAsync(int cameraId)
+    {
+        if (_workerHandles.TryRemove(cameraId, out var workerHandle))
+        {
+            try
+            {
+                await workerHandle.StopAsync();
+                logger.LogInformation("Worker for {id} has been stopped and removed.", workerHandle.Worker.CamName);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to stop worker for {id}", workerHandle.Worker.CamName);
+            }
+        }
+        else
+        {
+            logger.LogWarning("No worker found for camera ID {id} to stop.", cameraId);
+        }
     }
 
     public async Task StopAllAsync()
     {
-        foreach (var workerEntry in _workers.Values)
+        foreach (var workerHandle in _workerHandles.Values)
         {
             try
             {
-                await workerEntry.StopAsync();
-                logger.LogInformation("Worker for {id} has been stopped.", workerEntry.Worker.CamName);
+                await workerHandle.StopAsync();
+                logger.LogInformation("Worker for {id} has been stopped.", workerHandle.Worker.CamName);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to stop worker for {id}", workerEntry.Worker.CamName);
+                logger.LogError(ex, "Failed to stop worker for {id}", workerHandle.Worker.CamName);
             }
         }
     }
 
-    public Task<List<IWorkerEntry>> GetActiveCameraWorkerEntries()
+    public IEnumerable<CameraInfoDTO> GetWorkerDtos(bool isActive = true)
     {
-        var activeWorkers = _workers.Values.Where(w => w.RunningTask != null).ToList();
-        return Task.FromResult(activeWorkers);
+        var workers = GetWorkers(isActive);
+        return workers.Select(w => _mapper.Map<CameraInfoDTO>(w));
+    }
+
+    public IEnumerable<int> GetWorkerIds(bool isActive = true)
+    {
+        var workers = GetWorkers(isActive);
+        return workers.Select(w => w.CamId);
+    }
+
+    private IEnumerable<ICameraWorker> GetWorkers(bool isActive = true)
+    {
+        return _workerHandles.Values
+            .Where(w => isActive ? w.RunningTask != null : w.RunningTask == null)
+            .Select(x => x.Worker);
     }
 }

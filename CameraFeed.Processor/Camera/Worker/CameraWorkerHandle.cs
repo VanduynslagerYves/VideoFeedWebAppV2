@@ -1,6 +1,6 @@
 ﻿namespace CameraFeed.Processor.Camera.Worker;
 
-public interface IWorkerEntry
+public interface IWorkerHandle
 {
     ICameraWorker Worker { get; }
     CancellationTokenSource Cts { get; }
@@ -9,7 +9,7 @@ public interface IWorkerEntry
     Task StopAsync();
 }
 
-public abstract class WorkerEntry(ICameraWorker worker, CancellationTokenSource cts, Task? runningTask) : IWorkerEntry
+public abstract class WorkerHandle(ICameraWorker worker, CancellationTokenSource cts, Task? runningTask) : IWorkerHandle
 {
     public ICameraWorker Worker { get; } = worker;
     public CancellationTokenSource Cts { get; } = cts;
@@ -19,7 +19,7 @@ public abstract class WorkerEntry(ICameraWorker worker, CancellationTokenSource 
     public abstract Task StopAsync();
 }
 
-public class CameraWorkerEntry(ICameraWorker worker, CancellationTokenSource cts, Task? runningTask) : WorkerEntry(worker, cts, runningTask)
+public class CameraWorkerHandle(ICameraWorker worker, CancellationTokenSource cts, Task? runningTask) : WorkerHandle(worker, cts, runningTask)
 {
     /// <summary>
     /// Starts the camera worker on a background thread.

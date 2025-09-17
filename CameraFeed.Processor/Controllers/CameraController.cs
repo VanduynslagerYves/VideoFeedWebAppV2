@@ -5,27 +5,24 @@ using CameraFeed.Processor.Clients;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using AutoMapper;
 
 namespace CameraFeed.Processor.Controllers;
 
 [Route("api/camera")]
 [ApiController]
-public class CameraController(ICameraWorkerManager cameraWorkerManager, IWorkerRepository workerRepository, IHubContext<CameraHub> hubContext, IMapper mapper) : ControllerBase
+public class CameraController(ICameraWorkerManager cameraWorkerManager, IWorkerRepository workerRepository, IHubContext<CameraHub> hubContext) : ControllerBase
 {
     private readonly ICameraWorkerManager _cameraWorkerManager = cameraWorkerManager; //singleton
     private readonly IWorkerRepository _workerRepository = workerRepository; //scoped
     private readonly IHubContext<CameraHub> _hubContext = hubContext;
-    private readonly IMapper _mapper = mapper;
+    //private readonly IMapper _mapper = mapper;
 
     [Authorize]
     [HttpGet("active")]
-    public async Task<List<CameraInfoDTO>> GetActiveCameraIdsAsync()
+    public List<CameraInfoDTO> GetActiveCameras()
     {
         //TODO: inject CameraWorkerManager instead of WorkerService and get active cameras from there
-        var activeWorkerentries = await _cameraWorkerManager.GetActiveCameraWorkerEntries();
-        var dtos = activeWorkerentries.Select(w => _mapper.Map<CameraInfoDTO>(w)).ToList();
-        return dtos;
+        return [.. _cameraWorkerManager.GetWorkerDtos(isActive: true)];
     }
 
     [AllowAnonymous]

@@ -45,6 +45,7 @@ public class CameraWorkerStartupService(IServiceProvider serviceProvider, ICamer
 
         // Note:
         // Parallel.ForEachAsync allows multiple workers to be initialized concurrently.
+        // On multi-core systems, this may also result in parallel execution.
         // This significantly improves startup performance compared to sequential looping,
         // as it reduces total initialization time and makes better use of available system resources.
         await Parallel.ForEachAsync(enabledWorkers, parallelOptions, async (workerRecord, ct) =>

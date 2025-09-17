@@ -32,10 +32,10 @@ public class CameraInfoDtoMappingProfile : Profile
 {
     public CameraInfoDtoMappingProfile()
     {
-        CreateMap<WorkerEntry, CameraInfoDTO>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Worker.CamId))
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Worker.CamName))
-            .ForMember(dest => dest.Width, opt => opt.MapFrom(src => src.Worker.CamWidth))
-            .ForMember(dest => dest.Height, opt => opt.MapFrom(src => src.Worker.CamHeight));
+        CreateMap<CameraWorker, CameraInfoDTO>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.CamId))
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.CamName))
+            .ForMember(dest => dest.Width, opt => opt.MapFrom(src => src.CamWidth))
+            .ForMember(dest => dest.Height, opt => opt.MapFrom(src => src.CamHeight));
     }
 }
