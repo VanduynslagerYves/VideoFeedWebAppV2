@@ -1,4 +1,4 @@
-﻿namespace CameraFeed.Processor.ApplicationSetup;
+﻿namespace CameraFeed.Processor.Configuration;
 
 public static class CorsExtensions
 {

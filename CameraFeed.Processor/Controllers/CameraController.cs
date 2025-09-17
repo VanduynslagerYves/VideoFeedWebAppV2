@@ -11,9 +11,9 @@ namespace CameraFeed.Processor.Controllers;
 
 [Route("api/camera")]
 [ApiController]
-public class CameraController(IWorkerService cameraWorkerService, IWorkerRepository workerRepository, IHubContext<CameraHub> hubContext, IMapper mapper) : ControllerBase
+public class CameraController(ICameraWorkerManager cameraWorkerManager, IWorkerRepository workerRepository, IHubContext<CameraHub> hubContext, IMapper mapper) : ControllerBase
 {
-    private readonly IWorkerService _cameraWorkerService = cameraWorkerService; //singleton
+    private readonly ICameraWorkerManager _cameraWorkerManager = cameraWorkerManager; //singleton
     private readonly IWorkerRepository _workerRepository = workerRepository; //scoped
     private readonly IHubContext<CameraHub> _hubContext = hubContext;
     private readonly IMapper _mapper = mapper;
@@ -22,7 +22,8 @@ public class CameraController(IWorkerService cameraWorkerService, IWorkerReposit
     [HttpGet("active")]
     public async Task<List<CameraInfoDTO>> GetActiveCameraIdsAsync()
     {
-        var activeWorkerentries = await _cameraWorkerService.GetActiveCameraWorkerEntries();
+        //TODO: inject CameraWorkerManager instead of WorkerService and get active cameras from there
+        var activeWorkerentries = await _cameraWorkerManager.GetActiveCameraWorkerEntries();
         var dtos = activeWorkerentries.Select(w => _mapper.Map<CameraInfoDTO>(w)).ToList();
         return dtos;
     }

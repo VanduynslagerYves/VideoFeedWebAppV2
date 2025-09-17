@@ -1,22 +1,21 @@
 ﻿using AutoMapper;
+using CameraFeed.Processor.Camera.Worker;
 using CameraFeed.Processor.Repositories;
 
-namespace CameraFeed.Processor.Camera.Worker;
+namespace CameraFeed.Processor.BackgroundServices;
 
-public interface IWorkerService
+public interface ICameraWorkerStartupService
 {
-    Task<IEnumerable<IWorkerEntry>> GetActiveCameraWorkerEntries();
 }
 
-public abstract class WorkerServiceBase : IWorkerService
+public abstract class CameraWorkerStartupServiceBase : ICameraWorkerStartupService
 {
-    public abstract Task<IEnumerable<IWorkerEntry>> GetActiveCameraWorkerEntries();
 }
 
-public class CameraWorkerService(IServiceProvider serviceProvider, ICameraWorkerManager cameraInitializer, IMapper mapper, ILogger<CameraWorkerService> logger) : WorkerServiceBase, IHostedService
+public class CameraWorkerStartupService(IServiceProvider serviceProvider, ICameraWorkerManager cameraInitializer, IMapper mapper, ILogger<CameraWorkerStartupService> logger) : CameraWorkerStartupServiceBase, IHostedService
 {
     private readonly IServiceProvider _serviceProvider = serviceProvider;
-    private readonly ILogger<CameraWorkerService> _logger = logger;
+    private readonly ILogger<CameraWorkerStartupService> _logger = logger;
     private readonly ICameraWorkerManager _workerManager = cameraInitializer;
     private readonly IMapper _mapper = mapper;
 
@@ -67,10 +66,5 @@ public class CameraWorkerService(IServiceProvider serviceProvider, ICameraWorker
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         await _workerManager.StopAllAsync();
-    }
-
-    public override async Task<IEnumerable<IWorkerEntry>> GetActiveCameraWorkerEntries()
-    {
-        return await _workerManager.GetActiveCameraWorkerEntries();
     }
 }

@@ -1,6 +1,6 @@
 ﻿using CameraFeed.Processor.Data.Mappers;
 
-namespace CameraFeed.Processor.ApplicationSetup;
+namespace CameraFeed.Processor.Configuration;
 public static class AutoMapperExtensions
 {
     public static void AddProcessorAutoMapperConfig(this IServiceCollection services)

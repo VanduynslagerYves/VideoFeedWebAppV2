@@ -1,7 +1,7 @@
 ﻿using CameraFeed.Processor.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace CameraFeed.Processor.ApplicationSetup;
+namespace CameraFeed.Processor.Configuration;
 
 public static class DatabaseExtensions
 {

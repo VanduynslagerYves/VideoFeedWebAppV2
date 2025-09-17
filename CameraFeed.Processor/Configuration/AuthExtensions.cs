@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 
-namespace CameraFeed.Processor.ApplicationSetup;
+namespace CameraFeed.Processor.Configuration;
 
 public static class AuthExtensions
 {

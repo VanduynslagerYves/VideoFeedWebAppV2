@@ -1,6 +1,6 @@
 using CameraFeed.Processor.Data;
 using CameraFeed.Processor.Clients;
-using CameraFeed.Processor.ApplicationSetup;
+using CameraFeed.Processor.Configuration;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
