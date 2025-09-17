@@ -118,7 +118,7 @@ if (!app.Environment.IsDevelopment())
 //    await next();
 //});
 
-//app.UseHttpsRedirection();
+app.UseHttpsRedirection();
 app.UseRouting();
 
 app.UseAuthentication();

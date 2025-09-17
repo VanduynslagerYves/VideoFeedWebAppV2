@@ -1,4 +1,4 @@
-﻿using CameraFeed.Processor.Data.Models;
+﻿using CameraFeed.Processor.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -6,15 +6,15 @@ namespace CameraFeed.Processor.Data;
 
 public class CamDbContext(DbContextOptions<CamDbContext> options) : DbContext(options)
 {
-    public DbSet<WorkerDbModel> WorkerRecords { get; set; }
+    public DbSet<WorkerEntity> WorkerRecords { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<WorkerDbModel>(MapWorkerRecord);
-        modelBuilder.Entity<ResolutionDbModel>(MapResolutionRecord);
+        modelBuilder.Entity<WorkerEntity>(MapWorkerRecord);
+        modelBuilder.Entity<ResolutionEntity>(MapResolutionRecord);
     }
 
-    protected static void MapWorkerRecord(EntityTypeBuilder<WorkerDbModel> recordBuilder)
+    protected static void MapWorkerRecord(EntityTypeBuilder<WorkerEntity> recordBuilder)
     {
         recordBuilder.ToTable("worker").HasKey(x => x.Id);
         recordBuilder.Property(x => x.Id).ValueGeneratedOnAdd();
@@ -34,7 +34,7 @@ public class CamDbContext(DbContextOptions<CamDbContext> options) : DbContext(op
         recordBuilder.HasIndex(x => x.CameraId).IsUnique();
     }
 
-    protected static void MapResolutionRecord(EntityTypeBuilder<ResolutionDbModel> recordBuilder)
+    protected static void MapResolutionRecord(EntityTypeBuilder<ResolutionEntity> recordBuilder)
     {
         recordBuilder.ToTable("resolution").HasKey(x => x.Id);
         recordBuilder.Property(x => x.Id).ValueGeneratedOnAdd();

@@ -1,0 +1,33 @@
++----------------+           +--------------------------+           +-----------------+
+| Local Service  |           | Cloud Signaling Service  |           | Mobile Client   |
+| (Raspberry Pi) |           | (SignalR API)            |           | (App / Browser) |
++----------------+           +--------------------------+           +-----------------+
+       |                           		|                                       |
+       |------ Connect ---------------->|                                       |         (connect to SignalR with unique id)
+       |  (outbound SignalR/WebSocket)  |                              			|
+       |                           		|                             			|
+       |                           		|                             			|
+       |<---- "Start Streaming (ws)" ---|<---- "Start Streaming" (http)---------|
+       |                           		|<------------ Connect ---------------->|
+       |                                |        (outbound SignalR/WebSocket)   |
+       |                           		|                             			|
+       | Begin sending frames (ws) 		|   forward frames (ws)        			|
+       |                           		|                             			|
+       |                           		|                             			|
+       | Frame 1 ---------------------->|--- Forward Frame 1 ------------------>|
+       | Frame 2 ---------------------->|--- Forward Frame 2 ------------------>|
+       | Frame 3 ---------------------->|--- Forward Frame 3 ------------------>|
+       | ...                      		|                             			|
+       |                           		|                             			|
+       |<---- "Stop Streaming" (ws)-----|<---- "Stop Streaming" (http)----------|
+       |  				          		|                             			|
+       | Stop sending frames       		|                             			|
+       |                           		|                             			|
+
+minmize cost + latency
+downscale frames to max 20kb per frame
+downscale fps to max 10 fps
+
+register local service with unique id and link to user account (save to db)
+create signalR channel for each local service/user account pairing, so that only the intended user can access the stream
+authenticate websocket connections using tokens or keys

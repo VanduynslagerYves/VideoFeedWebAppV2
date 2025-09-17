@@ -1,4 +1,4 @@
-﻿using CameraFeed.Processor.Data.Models;
+﻿using CameraFeed.Processor.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace CameraFeed.Processor.Data;
@@ -15,12 +15,12 @@ public static class DataSeeder
             return;
 
         // Create and add resolutions
-        var res1 = new ResolutionDbModel("1080p", 1920, 1080);
-        var res2 = new ResolutionDbModel("720p", 1280, 720);
-        context.Set<ResolutionDbModel>().AddRange(res1, res2);
+        var res1 = new ResolutionEntity("1080p", 1920, 1080);
+        var res2 = new ResolutionEntity("720p", 1280, 720);
+        context.Set<ResolutionEntity>().AddRange(res1, res2);
 
         // Create and add workers
-        var worker1 = new WorkerDbModel
+        var worker1 = new WorkerEntity
         {
             Id = Guid.NewGuid(),
             Name = "Camera 1",
@@ -34,7 +34,7 @@ public static class DataSeeder
             Resolution = res1
         };
 
-        var worker2 = new WorkerDbModel
+        var worker2 = new WorkerEntity
         {
             Id = Guid.NewGuid(),
             Name = "Camera 2",

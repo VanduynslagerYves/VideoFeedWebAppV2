@@ -1,6 +1,6 @@
-﻿namespace CameraFeed.Processor.Data.Models;
+﻿namespace CameraFeed.Processor.Data.Entities;
 
-public class WorkerDbModel
+public class WorkerEntity
 {
     public Guid Id { get; set; }
     public required string Name { get; set; }
@@ -12,8 +12,8 @@ public class WorkerDbModel
     public required double MotionRatio { get; set; }
 
     public required string ResolutionId { get; set; }
-    public required ResolutionDbModel Resolution { get; set; }
+    public required ResolutionEntity Resolution { get; set; }
 }
 
-public record ResolutionDbModel(string Id, int Width, int Height);
+public record ResolutionEntity(string Id, int Width, int Height);
 

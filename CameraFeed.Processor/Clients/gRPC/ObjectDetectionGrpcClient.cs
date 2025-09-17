@@ -46,12 +46,12 @@ public class ObjectDetectionGrpcClient : IObjectDetectionGrpcClient, IDisposable
                 return imageData;
             }, cancellationToken);
         }
-        catch (RpcException ex)
+        catch (RpcException)
         {
             //_logger.LogWarning(ex, "gRPC request failed when detecting objects.");
             return imageData;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             //_logger.LogError(ex, "Unexpected error when detecting objects via gRPC.");
             return imageData;
