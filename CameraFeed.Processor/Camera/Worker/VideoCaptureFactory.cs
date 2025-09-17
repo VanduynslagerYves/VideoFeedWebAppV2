@@ -5,12 +5,12 @@ namespace CameraFeed.Processor.Camera.Worker;
 
 public interface IVideoCaptureFactory
 {
-    Task<VideoCapture> CreateAsync(WorkerOptions options);
+    Task<VideoCapture> CreateAsync(WorkerProperties options);
 }
 
 public class VideoCaptureFactory : IVideoCaptureFactory
 {
-    public Task<VideoCapture> CreateAsync(WorkerOptions options)
+    public Task<VideoCapture> CreateAsync(WorkerProperties options)
     {
         // Initialize VideoCapture with specified camera ID and settings
         // Note: VideoCapture initialization can be blocking, so we offload it to a thread pool thread

@@ -4,7 +4,7 @@ namespace CameraFeed.Processor.Camera.Worker;
 
 public interface ICameraWorkerManager
 {
-    Task<IWorkerEntry> CreateAsync(WorkerOptions options, CancellationToken cancellationToken);
+    Task<IWorkerEntry> CreateAsync(WorkerProperties options, CancellationToken cancellationToken);
     Task<IWorkerEntry> StartAsync(IWorkerEntry workerEntry);
     Task StopAllAsync();
     Task<List<IWorkerEntry>> GetActiveCameraWorkerEntries();
@@ -14,7 +14,7 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, ILogg
 {
     private readonly ConcurrentDictionary<int, IWorkerEntry> _workers = new();
 
-    public async Task<IWorkerEntry> CreateAsync(WorkerOptions options, CancellationToken cancellationToken)
+    public async Task<IWorkerEntry> CreateAsync(WorkerProperties options, CancellationToken cancellationToken)
     {
         if (_workers.TryGetValue(options.CameraOptions.Id, out var workerEntry)) return workerEntry;
 

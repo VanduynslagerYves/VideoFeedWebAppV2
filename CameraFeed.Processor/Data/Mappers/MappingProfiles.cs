@@ -9,7 +9,7 @@ public class WorkerOptionsMappingProfile : Profile
 {
     public WorkerOptionsMappingProfile()
     {
-        CreateMap<WorkerEntity, WorkerOptions>()
+        CreateMap<WorkerEntity, WorkerProperties>()
             .ForMember(dest => dest.Mode, opt => opt.MapFrom(src => src.UseMotiondetection ? InferenceMode.MotionBased : InferenceMode.Continuous))
             .ForMember(dest => dest.CameraOptions, opt => opt.MapFrom(src => src))
             .ForMember(dest => dest.MotionDetectionOptions, opt => opt.MapFrom(src => src));
@@ -20,9 +20,9 @@ public class WorkerOptionsMappingProfile : Profile
             .ForMember(dest => dest.Resolution, opt => opt.MapFrom(src => src.Resolution))
             .ForMember(dest => dest.Framerate, opt => opt.MapFrom(src => src.Framerate));
 
-        CreateMap<ResolutionEntity, CameraResolution>();
+        CreateMap<ResolutionEntity, CameraResolutionProperties>();
 
-        CreateMap<WorkerEntity, MotionDetectionOptions>()
+        CreateMap<WorkerEntity, MotionDetectionProperties>()
             .ForMember(dest => dest.DownscaleFactor, opt => opt.MapFrom(src => src.DownscaleRatio))
             .ForMember(dest => dest.MotionRatio, opt => opt.MapFrom(src => src.MotionRatio));
     }

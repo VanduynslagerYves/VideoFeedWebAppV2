@@ -23,7 +23,7 @@ public abstract class CameraWorkerBase : ICameraWorker
     protected readonly IHubContext<CameraHub> _hubContext;
     protected readonly IBackgroundSubtractorFactory _backgroundSubtractorFactory;
     protected readonly IVideoCaptureFactory _videoCaptureFactory;
-    protected readonly WorkerOptions _options;
+    protected readonly WorkerProperties _options;
 
     protected readonly int _frameSkip = 3;
     protected readonly int _downscaledWidth;
@@ -34,7 +34,7 @@ public abstract class CameraWorkerBase : ICameraWorker
     protected bool _lastMotionResult = false;
     protected Mat _downscaledFrame = new();
 
-    public CameraWorkerBase(WorkerOptions options, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient,
+    public CameraWorkerBase(WorkerProperties options, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient,
         IHubContext<CameraHub> hubContext)
     {
         _options = options;
@@ -65,7 +65,7 @@ public abstract class CameraWorkerBase : ICameraWorker
     public abstract Task RunAsync(CancellationToken token);
 }
 
-public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient,
+public class CameraWorker(WorkerProperties options, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient,
     ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : CameraWorkerBase(options, videoCaptureFactory, backgroundSubtractorFactory, objectDetectionClient, hubContext)
 {
     private readonly ILogger<CameraWorker> _logger = logger;
@@ -179,28 +179,28 @@ public class CameraWorker(WorkerOptions options, IVideoCaptureFactory videoCaptu
     }
 }
 
-public class WorkerOptions
+public class WorkerProperties
 {
     public required InferenceMode Mode { get; set; }
     public required CameraProperties CameraOptions { get; set; }
-    public required MotionDetectionOptions MotionDetectionOptions { get; set; }
+    public required MotionDetectionProperties MotionDetectionOptions { get; set; }
 }
 
 public class CameraProperties
 {
     public required int Id { get; set; }
     public required string Name { get; set; }
-    public required CameraResolution Resolution { get; set; }
+    public required CameraResolutionProperties Resolution { get; set; }
     public required int Framerate { get; set; }
 }
 
-public class CameraResolution
+public class CameraResolutionProperties
 {
     public required int Width { get; set; }
     public required int Height { get; set; }
 }
 
-public class MotionDetectionOptions
+public class MotionDetectionProperties
 {
     public required int DownscaleFactor { get; set; } // Downscale by a factor of n
     public required double MotionRatio { get; set; } // n% of the area

@@ -50,7 +50,7 @@ public class CameraWorkerService(IServiceProvider serviceProvider, ICameraWorker
         // as it reduces total initialization time and makes better use of available system resources.
         await Parallel.ForEachAsync(enabledWorkers, parallelOptions, async (workerRecord, ct) =>
         {
-            var options = _mapper.Map<WorkerOptions>(workerRecord);
+            var options = _mapper.Map<WorkerProperties>(workerRecord);
 
             try
             {
