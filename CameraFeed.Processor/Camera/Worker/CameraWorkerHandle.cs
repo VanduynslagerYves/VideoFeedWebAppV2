@@ -24,7 +24,7 @@ public class CameraWorkerHandle(ICameraWorker worker, CancellationTokenSource ct
     /// <summary>
     /// Starts the camera worker on a background thread.
     /// </summary>
-    /// <remarks>This method initializes and runs the camera worker asynchronously using a background thread. 
+    /// <remarks>This method initializes and runs the camera worker using a background thread. 
     /// If the worker is already running, this method does nothing. The running task is stored for later management,
     /// such as stopping or checking the status.</remarks>
     public override Task StartAsync()

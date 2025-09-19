@@ -3,11 +3,11 @@
 | (Raspberry Pi) |           | (SignalR API)            |           | (App / Browser) |
 +----------------+           +--------------------------+           +-----------------+
        |                           		|                                       |
-       |------ Connect ---------------->|                                       |         (connect to SignalR with unique id)
+       |------ Connect ---------------->|                                       | (auth with api key)        (connect to SignalR with unique id)
        |  (outbound SignalR/WebSocket)  |                              			|
        |                           		|                             			|
        |                           		|                             			|
-       |<---- "Start Streaming (ws)" ---|<---- "Start Streaming" (http)---------|
+       |<---- "Start Streaming (ws)" ---|<---- "Start Streaming" (http)---------| (auth with jwt token)
        |                           		|<------------ Connect ---------------->|
        |                                |        (outbound SignalR/WebSocket)   |
        |                           		|                             			|
