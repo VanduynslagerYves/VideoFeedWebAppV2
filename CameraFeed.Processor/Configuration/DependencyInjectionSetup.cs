@@ -6,9 +6,9 @@ using CameraFeed.Processor.Clients.gRPC;
 using CameraFeed.Processor.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 
-public static class ServiceCollectionExtensions
+public static class DependencyInjectionSetup
 {
-    public static void AddProcessorServices(this IServiceCollection services)
+    public static void SetupDependencyInjection(this IServiceCollection services)
     {
         services.AddScoped<IWorkerRepository, WorkerRepository>();
 

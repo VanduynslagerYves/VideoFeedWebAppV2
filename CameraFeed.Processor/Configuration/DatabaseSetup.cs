@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CameraFeed.Processor.Configuration;
 
-public static class DatabaseExtensions
+public static class DatabaseSetup
 {
     public static void AddDatabase(this IServiceCollection services, string? dbName)
     {

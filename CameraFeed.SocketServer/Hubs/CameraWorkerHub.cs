@@ -8,12 +8,12 @@
 /// provided <see cref="MessageForwarder"/> instance.</remarks>
 /// <param name="forwarder"></param>
 /// <param name="logger"></param>
-public class CameraWorkerHub(MessageForwarder forwarder, ILogger<CameraWorkerHub> logger) : HubBase(logger)
+public class CameraWorkerHub(IMessageForwarder forwarder, ILogger<CameraWorkerHub> logger) : HubBase(logger)
 {
-    private readonly MessageForwarder _forwarder = forwarder;
+    private readonly IMessageForwarder _forwarder = forwarder;
 
     public async Task ReceiveMessage(byte[] message, string groupName)
     {
-        await _forwarder.Forward(message, groupName);
+        await _forwarder.Apply(message, groupName);
     }
 }

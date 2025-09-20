@@ -2,7 +2,7 @@
 
 namespace CameraFeed.SocketServer.Configuration;
 
-public static class AuthExtensions
+public static class AuthSetup
 {
     public static void AddAuth(this IServiceCollection services)
     {

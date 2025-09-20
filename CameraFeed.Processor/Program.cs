@@ -12,7 +12,7 @@ builder.Services.AddHttpClient();
 var connectionString = builder.Configuration.GetConnectionString("CamDb");
 builder.Services.AddDatabase(connectionString);
 
-builder.Services.AddProcessorServices();
+builder.Services.SetupDependencyInjection();
 builder.Services.AddProcessorAutoMapperConfig();
 //var corsPolicyName = builder.Services.AddFrontendCors();
 
