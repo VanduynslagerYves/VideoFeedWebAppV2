@@ -50,7 +50,7 @@ app.component('video-feed', {
             .withUrl(this.hubUrl)
             .build();
 
-        connection.on("ReceiveImgBytes", data => {
+        connection.on("ReceiveForwardedMessage", data => {
             this.displayFrame(data, img);
         });
 

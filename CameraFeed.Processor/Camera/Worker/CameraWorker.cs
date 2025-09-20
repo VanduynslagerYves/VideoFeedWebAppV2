@@ -1,10 +1,10 @@
 ﻿using Emgu.CV;
 using Emgu.CV.Structure;
 using Emgu.CV.CvEnum;
-using Microsoft.AspNetCore.SignalR;
 using CameraFeed.Processor.Clients.gRPC;
 using CameraFeed.Processor.Extensions;
-using CameraFeed.Processor.Clients;
+using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.SignalR;
 
 namespace CameraFeed.Processor.Camera.Worker;
 
@@ -20,7 +20,7 @@ public interface ICameraWorker
 public abstract class CameraWorkerBase : ICameraWorker
 {
     protected readonly IObjectDetectionGrpcClient _objectDetectionClient;
-    protected readonly IHubContext<CameraHub> _hubContext;
+    //protected readonly IHubContext<CameraHub> _hubContext;
     protected readonly IBackgroundSubtractorFactory _backgroundSubtractorFactory;
     protected readonly IVideoCaptureFactory _videoCaptureFactory;
     protected readonly WorkerProperties _options;
@@ -34,14 +34,14 @@ public abstract class CameraWorkerBase : ICameraWorker
     protected bool _lastMotionResult = false;
     protected Mat _downscaledFrame = new();
 
-    public CameraWorkerBase(WorkerProperties options, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient,
-        IHubContext<CameraHub> hubContext)
+    public CameraWorkerBase(WorkerProperties options, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient
+        /*IHubContext<CameraHub> hubContext*/)
     {
         _options = options;
         _videoCaptureFactory = videoCaptureFactory;
         _backgroundSubtractorFactory = backgroundSubtractorFactory;
         _objectDetectionClient = objectDetectionClient;
-        _hubContext = hubContext;
+        //_hubContext = hubContext;
 
         CamId = options.CameraOptions.Id;
         CamName = options.CameraOptions.Name;
@@ -66,14 +66,24 @@ public abstract class CameraWorkerBase : ICameraWorker
 }
 
 public class CameraWorker(WorkerProperties options, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient,
-    ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : CameraWorkerBase(options, videoCaptureFactory, backgroundSubtractorFactory, objectDetectionClient, hubContext)
+    ILogger<CameraWorker> logger/*, IHubContext<CameraHub> hubContext*/) : CameraWorkerBase(options, videoCaptureFactory, backgroundSubtractorFactory, objectDetectionClient/*, hubContext*/)
 {
     private readonly ILogger<CameraWorker> _logger = logger;
+    private HubConnection? _hubConnection;
 
     public override async Task RunAsync(CancellationToken token)
     {
         try
         {
+            //TODO: via factory or DI
+            _hubConnection = new HubConnectionBuilder()
+                //.WithAutomaticReconnect()
+                .WithUrl("https://localhost:7244/receiverhub", options =>
+                {
+                    //options.Headers.Add("Authorization", "ApiKey abcdefghijklmnop");
+                }).Build();
+            await _hubConnection.StartAsync(token);
+
             using var capture = await _videoCaptureFactory.CreateAsync(_options);
             using var subtractor = await _backgroundSubtractorFactory.CreateAsync(type: BackgroundSubtractorType.MOG2);
             using var foregroundMask = new Mat();
@@ -89,11 +99,14 @@ public class CameraWorker(WorkerProperties options, IVideoCaptureFactory videoCa
                 {
                     imageByteArray = await RunInference(imageByteArray, token);
                 }
-                
-                await SendFrameToClientsAsync(imageByteArray, token);
+
+                await SendFrameToHubAsync(imageByteArray, token);
             }
+
+            await _hubConnection.StopAsync(token);
+            await _hubConnection.DisposeAsync();
         }
-        catch(OperationCanceledException)
+        catch (OperationCanceledException)
         {
             _logger.LogInformation("CameraWorker for camera {cameraId} was cancelled.", CamId);
         }
@@ -109,7 +122,7 @@ public class CameraWorker(WorkerProperties options, IVideoCaptureFactory videoCa
 
     private bool ShouldRunInference(Mat capturedFrame, Mat fgMask, IBackgroundSubtractorAdapter subtractor)
     {
-        switch(_options.Mode)
+        switch (_options.Mode)
         {
             case InferenceMode.Continuous:
                 return true;
@@ -173,9 +186,11 @@ public class CameraWorker(WorkerProperties options, IVideoCaptureFactory videoCa
         return frame.ToImage<Bgr, byte>().ToJpegData(quality);
     }
 
-    protected virtual async Task SendFrameToClientsAsync(byte[] imageByteArray, CancellationToken token)
+    protected virtual async Task SendFrameToHubAsync(byte[] imageByteArray, CancellationToken token)
     {
-        await _hubContext.Clients.Group(NotifyImageGroup).SendAsync("ReceiveImgBytes", imageByteArray, token);
+        if (_hubConnection != null && _hubConnection.State == HubConnectionState.Connected)
+            await _hubConnection!.InvokeAsync("ReceiveMessage", imageByteArray, $"camera_{CamId}", token);
+        //await _hubContext.Clients.Group(NotifyImageGroup).SendAsync("ReceiveImgBytes", imageByteArray, token);
     }
 }
 
