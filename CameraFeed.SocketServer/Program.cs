@@ -12,6 +12,9 @@ builder.Services.AddSignalR(options =>
     options.EnableDetailedErrors = true;
 });
 
+var connectionString = builder.Configuration.GetConnectionString("ApiKeyDb");
+builder.Services.AddDatabase(connectionString);
+
 var corsPolicyName = builder.Services.AddFrontendCors();
 
 builder.WebHost.UseKestrel();
