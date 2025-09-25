@@ -15,6 +15,7 @@ public static class DependencyInjectionSetup
         services.AddSingleton<IObjectDetectionGrpcClient, ObjectDetectionGrpcClient>();
         services.AddSingleton<ICameraWorkerFactory, CameraWorkerFactory>();
         services.AddSingleton<IVideoCaptureFactory, VideoCaptureFactory>();
+        services.AddSingleton<IHubConnectionFactory, HubConnectionFactory>();
         services.AddSingleton<IBackgroundSubtractorFactory, BackgroundSubtractorFactory>();
 
         //services.AddSingleton<CameraWorkerStartupService>(); //Registers the concrete type as a singleton (needed for hosted service resolution).

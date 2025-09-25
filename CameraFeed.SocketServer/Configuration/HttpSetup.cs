@@ -18,6 +18,6 @@ public static class HttpSetup
         app.MapControllers();
 
         app.MapHub<CameraWorkerHub>("/receiverhub");
-        app.MapHub<FrontendClientHub>("/forwarderhub");
+        //app.MapHub<FrontendClientHub>("/forwarderhub");
     }
 }

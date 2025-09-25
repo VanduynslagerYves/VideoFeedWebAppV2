@@ -1,4 +1,7 @@
-﻿namespace CameraFeed.SocketServer.Hubs;
+﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+
+namespace CameraFeed.SocketServer.Hubs;
 
 /// <summary>
 /// Represents a SignalR hub that receives messages and forwards them to a specified group.
@@ -8,12 +11,24 @@
 /// provided <see cref="MessageForwarder"/> instance.</remarks>
 /// <param name="forwarder"></param>
 /// <param name="logger"></param>
-public class CameraWorkerHub(IMessageForwarder forwarder, ILogger<CameraWorkerHub> logger) : HubBase(logger)
+public class CameraWorkerHub(IHubContext<CameraWorkerHub> context, ILogger<CameraWorkerHub> logger) : HubBase(logger)
 {
-    private readonly IMessageForwarder _forwarder = forwarder;
+    private readonly IHubContext<CameraWorkerHub> _context = context;
+    //private readonly IMessageForwarder _forwarder = forwarder;
 
-    public async Task ReceiveMessage(byte[] message, string groupName)
+    public async Task SendMessage(byte[] message, string groupName)
     {
-        await _forwarder.Apply(message, groupName);
+        await _context.Clients.Group(groupName).SendAsync("ReceiveForwardedMessage", message);
+    }
+
+    public async Task StartStreaming(string cameraName)
+    {
+        await _context.Clients.Group(cameraName).SendAsync("NotifyStreamingEnabled");
+    }
+
+    public async Task StopStreaming(string cameraName)
+    {
+        if (_context != null)
+            await _context.Clients.Group(cameraName).SendAsync("NotifyStreamingDisabled");
     }
 }

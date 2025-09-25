@@ -7,11 +7,11 @@ public interface ICameraWorkerFactory
     Task<ICameraWorker> CreateAsync(WorkerProperties options);
 }
 
-public class CameraWorkerFactory(IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient, ILogger<CameraWorker> logger) : ICameraWorkerFactory
+public class CameraWorkerFactory(IHubConnectionFactory hubConnectionFactory, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient, ILogger<CameraWorker> logger) : ICameraWorkerFactory
 {
     public Task<ICameraWorker> CreateAsync(WorkerProperties options)
     {
-        var worker = new CameraWorker(options, videoCaptureFactory, backgroundSubtractorFactory, objectDetectionClient, logger);
+        var worker = new CameraWorker(options, hubConnectionFactory, videoCaptureFactory, backgroundSubtractorFactory, objectDetectionClient, logger);
         return Task.FromResult<ICameraWorker>(worker);
     }
 }

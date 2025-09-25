@@ -1,3 +1,7 @@
-﻿namespace CameraFeed.SocketServer.Hubs;
+﻿//using Microsoft.AspNetCore.SignalR;
 
-public class FrontendClientHub(ILogger<FrontendClientHub> logger) : HubBase(logger){ }
+//namespace CameraFeed.SocketServer.Hubs;
+
+//public class FrontendClientHub(IHubContext<FrontendClientHub> context, ILogger<FrontendClientHub> logger) : HubBase(logger)
+//{
+//}

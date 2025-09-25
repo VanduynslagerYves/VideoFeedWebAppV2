@@ -26,7 +26,8 @@ public abstract class HubBase(ILogger<HubBase> logger) : Hub
     /// <returns>A <see cref="Task"/> that represents the asynchronous operation.</returns>
     public override Task OnConnectedAsync()
     {
-        _logger.LogInformation("Client connected: {ConnectionId}", Context.ConnectionId);
+        var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+        _logger.LogInformation("[{Timestamp}] Client connected: {ConnectionId}", timestamp, Context.ConnectionId);
         return base.OnConnectedAsync();
     }
 
@@ -39,7 +40,8 @@ public abstract class HubBase(ILogger<HubBase> logger) : Hub
     /// <returns>A <see cref="Task"/> that represents the asynchronous operation.</returns>
     public override Task OnDisconnectedAsync(Exception? exception)
     {
-        _logger.LogInformation("Client disconnected: {ConnectionId}", Context.ConnectionId);
+        var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+        _logger.LogInformation("[{Timestamp}] Client disconnected: {ConnectionId}", timestamp, Context.ConnectionId);
         return base.OnDisconnectedAsync(exception);
     }
 

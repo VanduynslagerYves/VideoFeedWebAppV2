@@ -13,14 +13,8 @@
         @foreach (var camera in Model)
         {
             @* TODO: appsettings.json *@
-            <video-feed camera-id="@camera.Id" camera-name="@camera.Name" hub-url="https://localhost:7244/forwarderhub"></video-feed>
+            <video-feed camera-id="@camera.Id" camera-name="@camera.Name" local-hub-url="https://localhost:7244/receiverhub" remote-hub-url="https://localhost:7000/receiverhub"></video-feed>
         }
-    </div>
-}
-else
-{
-    <div>
-        <p>NOPE</p>
     </div>
 }
 

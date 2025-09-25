@@ -19,10 +19,10 @@ public interface ICameraWorker
 
 public abstract class CameraWorkerBase : ICameraWorker
 {
-    protected readonly IObjectDetectionGrpcClient _objectDetectionClient;
-    //protected readonly IHubContext<CameraHub> _hubContext;
-    protected readonly IBackgroundSubtractorFactory _backgroundSubtractorFactory;
+    protected readonly IHubConnectionFactory _hubConnectionFactory;
     protected readonly IVideoCaptureFactory _videoCaptureFactory;
+    protected readonly IBackgroundSubtractorFactory _backgroundSubtractorFactory;
+    protected readonly IObjectDetectionGrpcClient _objectDetectionClient;
     protected readonly WorkerProperties _options;
 
     protected readonly int _frameSkip = 3;
@@ -34,14 +34,13 @@ public abstract class CameraWorkerBase : ICameraWorker
     protected bool _lastMotionResult = false;
     protected Mat _downscaledFrame = new();
 
-    public CameraWorkerBase(WorkerProperties options, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient
-        /*IHubContext<CameraHub> hubContext*/)
+    public CameraWorkerBase(WorkerProperties options, IHubConnectionFactory hubConnectionFactory, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient)
     {
         _options = options;
+        _hubConnectionFactory = hubConnectionFactory;
         _videoCaptureFactory = videoCaptureFactory;
         _backgroundSubtractorFactory = backgroundSubtractorFactory;
         _objectDetectionClient = objectDetectionClient;
-        //_hubContext = hubContext;
 
         CamId = options.CameraOptions.Id;
         CamName = options.CameraOptions.Name;
@@ -55,8 +54,6 @@ public abstract class CameraWorkerBase : ICameraWorker
         _motionThreshold = (int)(downscaledArea * options.MotionDetectionOptions.MotionRatio);
     }
 
-    protected string NotifyImageGroup => $"camera_{CamId}";
-
     public int CamId { get; }
     public string CamName { get; }
     public int CamWidth { get; }
@@ -65,24 +62,19 @@ public abstract class CameraWorkerBase : ICameraWorker
     public abstract Task RunAsync(CancellationToken token);
 }
 
-public class CameraWorker(WorkerProperties options, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient,
-    ILogger<CameraWorker> logger/*, IHubContext<CameraHub> hubContext*/) : CameraWorkerBase(options, videoCaptureFactory, backgroundSubtractorFactory, objectDetectionClient/*, hubContext*/)
+public class CameraWorker(WorkerProperties options, IHubConnectionFactory hubConnectionFactory, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient,
+    ILogger<CameraWorker> logger) : CameraWorkerBase(options, hubConnectionFactory, videoCaptureFactory, backgroundSubtractorFactory, objectDetectionClient)
 {
     private readonly ILogger<CameraWorker> _logger = logger;
-    private HubConnection? _hubConnection;
+    private HubConnection? _remoteHubConnection;
+    private HubConnection? _localHubConnection;
+    private bool _remoteStreamingEnabled;
 
     public override async Task RunAsync(CancellationToken token)
     {
         try
         {
-            //TODO: via factory or DI
-            _hubConnection = new HubConnectionBuilder()
-                //.WithAutomaticReconnect()
-                .WithUrl("https://localhost:7244/receiverhub", options =>
-                {
-                    //options.Headers.Add("Authorization", "ApiKey abcdefghijklmnop");
-                }).Build();
-            await _hubConnection.StartAsync(token);
+            await InitHubConnection(token);
 
             using var capture = await _videoCaptureFactory.CreateAsync(_options);
             using var subtractor = await _backgroundSubtractorFactory.CreateAsync(type: BackgroundSubtractorType.MOG2);
@@ -103,8 +95,11 @@ public class CameraWorker(WorkerProperties options, IVideoCaptureFactory videoCa
                 await SendFrameToHubAsync(imageByteArray, token);
             }
 
-            await _hubConnection.StopAsync(token);
-            await _hubConnection.DisposeAsync();
+            await Task.WhenAll(
+                new List<Task> {
+                    StopAndDisposeLocalHubConnection(token),
+                    StopAndDisposeRemoteHubConnection(token)
+                });
         }
         catch (OperationCanceledException)
         {
@@ -186,11 +181,113 @@ public class CameraWorker(WorkerProperties options, IVideoCaptureFactory videoCa
         return frame.ToImage<Bgr, byte>().ToJpegData(quality);
     }
 
+    // Note: MessagePack or json is a good alternative to send structured data, but not needed here since we only send byte[]
     protected virtual async Task SendFrameToHubAsync(byte[] imageByteArray, CancellationToken token)
     {
-        if (_hubConnection != null && _hubConnection.State == HubConnectionState.Connected)
-            await _hubConnection!.InvokeAsync("ReceiveMessage", imageByteArray, $"camera_{CamId}", token);
-        //await _hubContext.Clients.Group(NotifyImageGroup).SendAsync("ReceiveImgBytes", imageByteArray, token);
+        // Via SignalR Cloud Hub
+        if (_remoteStreamingEnabled)
+        {
+            //TODO: reduce image size when this is enabled (cost!)
+            if (_remoteHubConnection != null && _remoteHubConnection.State == HubConnectionState.Connected)
+                await _remoteHubConnection!.InvokeAsync("SendMessage", imageByteArray, $"{CamName}", token);
+        }
+
+        // Via SignalR Local Hub
+        if (_localHubConnection != null && _localHubConnection.State == HubConnectionState.Connected)
+            await _localHubConnection!.InvokeAsync("SendMessage", imageByteArray, $"{CamName}", token);
+    }
+
+    private async Task InitHubConnection(CancellationToken token)
+    {
+        //TODO: circuitbreaker for connection attempts
+        _remoteHubConnection = _hubConnectionFactory.CreateLocalConnection("https://localhost:7000/receiverhub");
+        _localHubConnection = _hubConnectionFactory.CreateLocalConnection("https://localhost:7244/receiverhub");
+
+        try
+        {
+            await Task.WhenAll(
+                new List<Task>
+                {
+                    _localHubConnection.StartAsync(token),
+                    _localHubConnection.InvokeAsync("JoinGroup", CamName, token),
+                });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error initializing Local HubConnection for camera {cameraId}: {message}", CamId, ex.Message);
+        }
+
+        try
+        {
+            // Setup handlers for streaming control messages from the hub
+            _remoteHubConnection.On("NotifyStreamingEnabled", () =>
+            {
+                _remoteStreamingEnabled = true;
+                _logger.LogInformation("Stream enabled for camera {cameraId}", CamId);
+            });
+
+            _remoteHubConnection.On("NotifyStreamingDisabled", () =>
+            {
+                _remoteStreamingEnabled = false;
+                _logger.LogInformation("Stream disabled for camera {cameraId}", CamId);
+            });
+
+            // Connect to the SignalR hub group for this camera
+            await Task.WhenAll(
+                new List<Task>
+                {
+                    _remoteHubConnection.StartAsync(token),
+                    _remoteHubConnection.InvokeAsync("JoinGroup", CamName, token),
+                });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error initializing HubConnection for camera {cameraId}: {message}", CamId, ex.Message);
+        }
+    }
+
+    private async Task StopAndDisposeRemoteHubConnection(CancellationToken token)
+    {
+        if (_remoteHubConnection != null)
+        {
+            try
+            {
+                await _remoteHubConnection.InvokeAsync("LeaveGroup", CamName, token);
+                await _remoteHubConnection.StopAsync(token);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error stopping HubConnection for camera {cameraId}: {message}", CamId, ex.Message);
+                throw; // Rethrow to let the caller handle the failure
+            }
+            finally
+            {
+                await _remoteHubConnection.DisposeAsync();
+                _remoteHubConnection = null;
+            }
+        }
+    }
+
+    private async Task StopAndDisposeLocalHubConnection(CancellationToken token)
+    {
+        if (_localHubConnection != null)
+        {
+            try
+            {
+                await _localHubConnection.InvokeAsync("LeaveGroup", CamName, token);
+                await _localHubConnection.StopAsync(token);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error stopping Local HubConnection for camera {cameraId}: {message}", CamId, ex.Message);
+                throw; // Rethrow to let the caller handle the failure
+            }
+            finally
+            {
+                await _localHubConnection.DisposeAsync();
+                _localHubConnection = null;
+            }
+        }
     }
 }
 

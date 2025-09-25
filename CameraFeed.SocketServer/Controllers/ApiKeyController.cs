@@ -31,11 +31,9 @@ public class ApiKeyController(IApiKeyGenerator apiKeyGenerator, IApiKeyRepositor
     public async Task<IActionResult> DeleteKey(int id)
     {
         bool deleted = await _apiKeyRepository.DeleteAsync(id);
-        if (deleted)
-        {
-            await _apiKeyRepository.SaveChangesAsync();
-            return Ok(new { id, deleted });
-        }
-        return NotFound();
+        if (!deleted) return NotFound();
+
+        await _apiKeyRepository.SaveChangesAsync();
+        return Ok();
     }
 }
