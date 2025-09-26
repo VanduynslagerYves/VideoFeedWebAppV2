@@ -200,8 +200,8 @@ public class CameraWorker(WorkerProperties options, IHubConnectionFactory hubCon
     private async Task InitHubConnection(CancellationToken token)
     {
         //TODO: circuitbreaker for connection attempts
-        _remoteHubConnection = _hubConnectionFactory.CreateLocalConnection("https://localhost:7000/receiverhub");
-        _localHubConnection = _hubConnectionFactory.CreateLocalConnection("https://localhost:7244/receiverhub");
+        _remoteHubConnection = _hubConnectionFactory.CreateConnection("https://localhost:7000/workerhub", apiKey: "123456789");
+        _localHubConnection = _hubConnectionFactory.CreateConnection("https://localhost:7244/workerhub", apiKey: "123456789");
 
         try
         {

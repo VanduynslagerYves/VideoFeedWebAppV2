@@ -8,16 +8,16 @@ public static class HttpSetup
     {
         app.UseCors(corsPolicyName);
 
-        app.UseWebSockets();
+        app.UseRouting();
+
+        app.UseAuthentication();
+        app.UseAuthorization();
 
         app.UseHttpsRedirection();
 
-        app.UseAuthorization();
-        app.UseAuthorization();
-
         app.MapControllers();
 
-        app.MapHub<CameraWorkerHub>("/receiverhub");
-        //app.MapHub<FrontendClientHub>("/forwarderhub");
+        app.MapHub<CameraWorkerHub>("/workerhub").RequireAuthorization();
+        app.MapHub<FrontendClientHub>("/clienthub").RequireAuthorization();
     }
 }

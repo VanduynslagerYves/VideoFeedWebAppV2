@@ -1,34 +1,27 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
 
 namespace CameraFeed.SocketServer.Hubs;
 
-/// <summary>
-/// Represents a SignalR hub that receives messages and forwards them to a specified group.
-/// It receives image bytes from camera workers and forwards them to front-end clients"/>
-/// </summary>
-/// <remarks>This hub is designed to handle incoming messages and forward them to a specific group using the
-/// provided <see cref="MessageForwarder"/> instance.</remarks>
-/// <param name="forwarder"></param>
-/// <param name="logger"></param>
-public class CameraWorkerHub(IHubContext<CameraWorkerHub> context, ILogger<CameraWorkerHub> logger) : HubBase(logger)
+public class CameraWorkerHub(IFrontendForwarder forwarder, ILogger<CameraWorkerHub> logger) : HubBase(logger)
 {
-    private readonly IHubContext<CameraWorkerHub> _context = context;
-    //private readonly IMessageForwarder _forwarder = forwarder;
+    private readonly IFrontendForwarder _forwarder = forwarder;
 
     public async Task SendMessage(byte[] message, string groupName)
     {
-        await _context.Clients.Group(groupName).SendAsync("ReceiveForwardedMessage", message);
+        await _forwarder.ApplyAsync(message, groupName, "ReceiveForwardedMessage");
     }
 
-    public async Task StartStreaming(string cameraName)
+    public override async Task OnConnectedAsync()
     {
-        await _context.Clients.Group(cameraName).SendAsync("NotifyStreamingEnabled");
-    }
+        var httpContext = Context.GetHttpContext();
+        var apiKey = httpContext?.Request.Headers["X-API-KEY"].FirstOrDefault();
+        
+        if(string.IsNullOrEmpty(apiKey) || apiKey != "123456789")
+        {
+            Context.Abort();
+            return;
+        }
 
-    public async Task StopStreaming(string cameraName)
-    {
-        if (_context != null)
-            await _context.Clients.Group(cameraName).SendAsync("NotifyStreamingDisabled");
+        await base.OnConnectedAsync();
     }
 }

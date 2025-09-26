@@ -1,21 +1,15 @@
-﻿namespace CameraFeed.SocketServer.Configuration;
-
-using CameraFeed.SocketServer.Hubs;
+﻿using CameraFeed.SocketServer.Hubs;
 using CameraFeed.SocketServer.KeyGenerator;
 using CameraFeed.SocketServer.Repositories;
-using Microsoft.Extensions.DependencyInjection;
+
+namespace CameraFeed.SocketServer.Configuration;
 
 public static class DependencyInjectionSetup
 {
     public static void SetupDependencyInjection(this IServiceCollection services)
     {
-        //Decorate MessageForwarder with MessageForwarderDecorator
-        //services.AddSingleton<MessageForwarder>();
-        //services.AddSingleton<IMessageForwarder>(provider =>
-        //{
-        //    var forwarder = provider.GetRequiredService<MessageForwarder>();
-        //    return new MessageForwarderDecorator(forwarder);
-        //});
+        services.AddSingleton<IFrontendForwarder, FrontendForwarder>();
+        services.AddSingleton<IBackendForwarder, BackendForwarder>();
 
         services.AddScoped<IApiKeyRepository, ApiKeyRepository>();
         services.AddSingleton<IApiKeyGenerator, ApiKeyGenerator>();

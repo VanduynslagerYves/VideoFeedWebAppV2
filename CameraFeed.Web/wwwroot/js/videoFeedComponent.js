@@ -46,9 +46,20 @@ app.component('video-feed', {
         };
 
         // Helper to start connection and handle fallback
-        const startConnection = (localUrl, fallbackUrl) => {
+        const startConnection = async (primaryUrl, fallbackUrl) => {
+
+            // Fetch connection info from secured endpoint
+            const response = await fetch('/api/signalr/connection-info', { credentials: 'include' });
+            if (!response.ok) {
+                console.error("Failed to get SignalR connection info");
+                return;
+            }
+            const token = response.text();
+
             connection = new signalR.HubConnectionBuilder()
-                .withUrl(localUrl).build();
+                .withUrl(primaryUrl, {
+                    accessTokenFactory: () => token
+                }).build();
 
             connection.on("ReceiveForwardedMessage", data => {
                 this.displayFrame(data, img);
