@@ -13,7 +13,7 @@ public class CameraController(ICameraWorkerManager cameraWorkerManager, IWorkerR
     private readonly ICameraWorkerManager _cameraWorkerManager = cameraWorkerManager; //singleton
     private readonly IWorkerRepository _workerRepository = workerRepository; //scoped
 
-    //TODO: needs to move to SocketServer project, or ask with SignalR hub directly from front-end
+    //TOOD: ask SocketServer to broadcast active cameras every X seconds instead of this endpoint
     [Authorize]
     [HttpGet("active")]
     public List<CameraInfoDTO> GetActiveCameras()

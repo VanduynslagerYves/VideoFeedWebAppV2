@@ -17,7 +17,7 @@ public static class HttpSetup
 
         app.MapControllers();
 
-        app.MapHub<CameraWorkerHub>("/workerhub").RequireAuthorization();
-        app.MapHub<FrontendClientHub>("/clienthub").RequireAuthorization();
+        app.MapHub<CameraWorkerHub>("/workerhub");
+        app.MapHub<FrontendClientHub>("/clienthub");
     }
 }

@@ -10,7 +10,8 @@ public static class AuthSetup
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        }).AddJwtBearer(options =>
+        })
+        .AddJwtBearer(options =>
         {
             options.Authority = "https://dev-i4c6oxzfwdlecakx.eu.auth0.com/";
             options.Audience = "https://localhost:7244";
@@ -25,6 +26,23 @@ public static class AuthSetup
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true
             };
+
+           //Allow JWTs in SignalR query string for WebSocket connections
+           options.Events = new JwtBearerEvents
+           {
+               OnMessageReceived = context =>
+               {
+                   var accessToken = context.Request.Query["access_token"];
+                   var path = context.HttpContext.Request.Path;
+                   // Adjust the path(s) to match your hub endpoints
+                   if (!string.IsNullOrEmpty(accessToken) &&
+                       (path.StartsWithSegments("/clienthub") || path.StartsWithSegments("/workerhub")))
+                   {
+                       context.Token = accessToken;
+                   }
+                   return Task.CompletedTask;
+               }
+           };
         });
 
         services.AddAuthorization();

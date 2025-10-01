@@ -2,6 +2,7 @@
 
 namespace CameraFeed.SocketServer.Hubs;
 
+[Authorize]
 public class FrontendClientHub(IBackendForwarder forwarder, ILogger<FrontendClientHub> logger) : HubBase(logger)
 {
     private readonly IBackendForwarder _forwarder = forwarder;

@@ -18,7 +18,7 @@ export const appConfig: ApplicationConfig = {
       // no client secret is needed here, that's only for backend applications
       authorizationParams: {
         redirect_uri: window.location.origin,
-        audience: 'https://localhost:7214',
+        audience: 'https://localhost:7244',
         scope: 'openid profile email'
       },
     }),
