@@ -86,7 +86,7 @@ export class Cam implements AfterViewInit, OnDestroy {
   private setupSignalRConnection(token: string, hubUrl: string = this.hubUrl, triedFallback: boolean = false) {
     // Set up the SignalR connection to receive video frames
     this.connection = new signalR.HubConnectionBuilder()
-      .withUrl(this.hubUrl, {
+      .withUrl(hubUrl, {
         accessTokenFactory: () => token
       })
       .build();
