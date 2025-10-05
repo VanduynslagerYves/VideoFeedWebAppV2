@@ -89,7 +89,7 @@ public class CameraWorker(WorkerProperties options, ICameraSignalRclient signalR
                     imageData = await RunInference(imageData, token);
                 }
 
-                await _signalRclient.SendFrame(imageData, CamName, token);
+                await _signalRclient.SendFrameAsync(imageData, CamName, token);
             }
 
             await _signalRclient.StopAndDisposeConnectionsAsync(CamName, token);
