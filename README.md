@@ -1,3 +1,22 @@
+# Technical Summary
+## Architecture Overview:
+The system is designed for real-time camera feed processing and delivery, using a broker/relay (SocketServer) to decouple internal processing from external clients. The architecture consists of three main components:
+- Processor:
+Runs on the internal network, manages camera workers, processes video streams, and sends frames to the SocketServer.
+-	SocketServer:
+Hosted in the cloud, acts as a broker for real-time communication. It relays frames and control messages between the Processor and frontend clients.
+-	Frontend (Angular):
+Connects to the SocketServer to receive video frames and send control commands.
+## Key Challenges & Solutions:
+-	NAT Traversal:
+By using a cloud-hosted SocketServer, the architecture avoids direct inbound connections to the internal Processor, bypassing NAT/firewall issues.
+-	Cost Optimization:
+The current relay model is simple but can be costly due to high data transfer through the SocketServer. Considering a hybrid approach (using the SocketServer for control and direct streaming for video) can reduce costs, but introduces new challenges (NAT, browser limitations).
+-	Browser Compatibility:
+The frontend uses standard browser technologies (WebSockets) to communicate with the SocketServer, ensuring compatibility and security.
+## Reasoning:
+This architecture provides a secure, scalable, and browser-friendly solution for real-time video streaming, while keeping internal resources protected and minimizing complexity for client connections.
+
 # CameraFeed Solution - Local Debugging Setup
 
 This repository contains a multi-component system for video feed processing, object/human detection, and web-based visualization. It includes:
