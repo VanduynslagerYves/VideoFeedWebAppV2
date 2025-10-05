@@ -13,14 +13,13 @@ import { Cam } from './cam/cam';
 
 export class App implements OnInit{
   protected readonly title = signal('camerafeed-client');
-  public readonly origin = window.location.origin;
   constructor(public auth: AuthService) {}
 
   ngOnInit() {
-    this.auth.isAuthenticated$.subscribe(isAuth => {
-      if (isAuth) {
-        //this.auth.getAccessTokenSilently().subscribe(token => console.log('Access Token:', token));
-      }
-    });
+    // this.auth.isAuthenticated$.subscribe(isAuth => {
+    //   if (isAuth) {
+    //     this.auth.getAccessTokenSilently().subscribe(token => console.log('Access Token:', token));
+    //   }
+    // });
   }
 }

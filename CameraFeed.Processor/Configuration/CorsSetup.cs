@@ -1,12 +1,15 @@
 ﻿namespace CameraFeed.Processor.Configuration;
 
-public static class CorsExtensions
+public static class CorsSetup
 {
-    static readonly string[] _frontendUrls = ["https://katacam-g7fchjfvhucgf8gq.northeurope-01.azurewebsites.net", "https://localhost:7006",
-            "https://localhost:44300",
-            "https://pure-current-mastodon.ngrok-free.app",
-            "https://localhost:4200", //angular client
-            "http://localhost:4200"];
+    static readonly string[] _frontendUrls = [
+        "https://localhost:7006",
+        "https://localhost:4200", //angular client
+        "http://localhost:4200",
+        //"https://katacam-g7fchjfvhucgf8gq.northeurope-01.azurewebsites.net",
+        //"https://localhost:44300",
+        //"https://pure-current-mastodon.ngrok-free.app"
+        ];
 
     static readonly string _policyName = "AllowFrontend";
 

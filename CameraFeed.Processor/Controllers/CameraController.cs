@@ -1,22 +1,19 @@
 ﻿using CameraFeed.Processor.Repositories;
 using CameraFeed.Processor.Camera.Worker;
 using CameraFeed.Shared.DTOs;
-using CameraFeed.Processor.Clients;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 
 namespace CameraFeed.Processor.Controllers;
 
 [Route("api/camera")]
 [ApiController]
-public class CameraController(ICameraWorkerManager cameraWorkerManager, IWorkerRepository workerRepository, IHubContext<CameraHub> hubContext) : ControllerBase
+public class CameraController(ICameraWorkerManager cameraWorkerManager, IWorkerRepository workerRepository) : ControllerBase
 {
     private readonly ICameraWorkerManager _cameraWorkerManager = cameraWorkerManager; //singleton
     private readonly IWorkerRepository _workerRepository = workerRepository; //scoped
-    private readonly IHubContext<CameraHub> _hubContext = hubContext;
-    //private readonly IMapper _mapper = mapper;
 
+    //TOOD: ask SocketServer to broadcast active cameras every X seconds instead of this endpoint
     [Authorize]
     [HttpGet("active")]
     public List<CameraInfoDTO> GetActiveCameras()
@@ -29,8 +26,7 @@ public class CameraController(ICameraWorkerManager cameraWorkerManager, IWorkerR
     [HttpPost("person-detected")]
     public async Task<IActionResult> PersonDetected([FromBody] PersonDetectedDto dto)
     {
-        var NotifyHumanDetectedGroup = $"camera_{dto.CameraId}_human_detected";
-        await _hubContext.Clients.Group(NotifyHumanDetectedGroup).SendAsync("HumanDetected", dto.CameraId.ToString());
+        var notifyHumanDetectedGroup = $"camera_{dto.CameraId}_human_detected";
         return Ok();
     }
 

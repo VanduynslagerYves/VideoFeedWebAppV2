@@ -1,16 +1,21 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 
-namespace CameraFeed.Processor.Clients;
+namespace CameraFeed.SocketServer.Hubs;
 
 /// <summary>
-/// Represents a SignalR hub for managing camera-related client connections and group memberships.
+/// Serves as a base class for SignalR hubs, providing common functionality for managing client connections and group
+/// membership.
 /// </summary>
-/// <remarks>The <see cref="CameraHub"/> class provides functionality for handling client connections and
-/// disconnections, as well as managing group memberships for connected clients. It is designed to be used in real-time
-/// applications where clients can join or leave specific groups to receive targeted messages.</remarks>
-public class CameraHub(ILogger<CameraHub> logger) : Hub
+/// <remarks>This abstract class extends the <see cref="Hub"/> class and provides additional methods for handling
+/// client connections and managing group membership. It includes default implementations for <see
+/// cref="OnConnectedAsync"/> and <see cref="OnDisconnectedAsync"/>, which can be overridden to add custom logic for
+/// connection and disconnection events. The class also provides utility methods for adding and removing connections
+/// from groups. <para> Derived classes should inherit from <see cref="HubBase"/> to leverage its logging capabilities
+/// and group management methods. </para></remarks>
+/// <param name="logger"></param>
+public abstract class HubBase(ILogger<HubBase> logger) : Hub
 {
-    private readonly ILogger<CameraHub> _logger = logger;
+    private readonly ILogger<HubBase> _logger = logger;
 
     /// <summary>
     /// Called when a new client connects to the hub.
@@ -21,7 +26,8 @@ public class CameraHub(ILogger<CameraHub> logger) : Hub
     /// <returns>A <see cref="Task"/> that represents the asynchronous operation.</returns>
     public override Task OnConnectedAsync()
     {
-        _logger.LogInformation("Client connected: {ConnectionId}", Context.ConnectionId);
+        var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+        _logger.LogInformation("[{Timestamp}] Client connected: {ConnectionId}", timestamp, Context.ConnectionId);
         return base.OnConnectedAsync();
     }
 
@@ -34,7 +40,8 @@ public class CameraHub(ILogger<CameraHub> logger) : Hub
     /// <returns>A <see cref="Task"/> that represents the asynchronous operation.</returns>
     public override Task OnDisconnectedAsync(Exception? exception)
     {
-        _logger.LogInformation("Client disconnected: {ConnectionId}", Context.ConnectionId);
+        var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+        _logger.LogInformation("[{Timestamp}] Client disconnected: {ConnectionId}", timestamp, Context.ConnectionId);
         return base.OnDisconnectedAsync(exception);
     }
 
@@ -45,7 +52,7 @@ public class CameraHub(ILogger<CameraHub> logger) : Hub
     /// the specified group. Once added, the connection will receive messages sent to the group.</remarks>
     /// <param name="groupName">The name of the group to join. Cannot be null or empty.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    public async Task JoinGroup(string groupName)
+    public async virtual Task JoinGroup(string groupName)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
     }
@@ -58,7 +65,7 @@ public class CameraHub(ILogger<CameraHub> logger) : Hub
     /// group. Ensure that <paramref name="groupName"/> is valid and corresponds to an existing group.</remarks>
     /// <param name="groupName">The name of the group to leave. Cannot be null or empty.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    public async Task LeaveGroup(string groupName)
+    public async virtual Task LeaveGroup(string groupName)
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
     }

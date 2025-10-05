@@ -16,8 +16,8 @@
 <main id="main">
   @if (auth.isAuthenticated$ | async) {
     <div id="camsContainer">
-      <app-cam [cameraId]='0'></app-cam>
       <app-cam [cameraId]='1'></app-cam>
+      <app-cam [cameraId]='2'></app-cam>
     </div>
   }
 </main>

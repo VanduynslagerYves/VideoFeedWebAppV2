@@ -4,7 +4,8 @@ app.component('video-feed', {
     props: {
         cameraId: String,
         cameraName: String,
-        hubUrl: String,
+        localHubUrl: String,
+        remoteHubUrl: String,
     },
     template: `
         <div class="cambox">
@@ -13,16 +14,14 @@ app.component('video-feed', {
         </div>
     `,
 
-    //< audio : ref = "'audio_' + cameraId" src = "/audio/human_detected.wav" ></audio >
-
     mounted() {
-        //:width="width" :height="height"
         const canvas = this.$refs[this.cameraId];
         const ctx = canvas.getContext('2d');
         const img = new Image(); // Reuse a single Image instance to prevent memory leaks
 
         let latestData = null;
         let loading = false;
+        let connection = null;
 
         img.onload = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -46,34 +45,53 @@ app.component('video-feed', {
             imageObj.src = "data:image/jpeg;base64," + data;
         };
 
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl(this.hubUrl)
-            .build();
+        // Helper to start connection and handle fallback
+        const startConnection = async (primaryUrl, fallbackUrl) => {
 
-        connection.on("ReceiveImgBytes", data => {
-            this.displayFrame(data, img);
-        });
+            // Fetch connection info from secured endpoint
+            const response = await fetch('/api/signalr/connection-info', { credentials: 'include' });
+            if (!response.ok) {
+                console.error("Failed to get SignalR connection info");
+                return;
+            }
+            const token = response.text();
 
-        // Listen for person detection event
-        //connection.on("HumanDetected", (cameraId) => {
-        //    if (cameraId === this.cameraId) {
-        //        const audio = this.$refs['audio_' + cameraId];
-        //        if (audio) {
-        //            audio.currentTime = 0;
-        //            audio.play();
-        //        }
-        //    }
-        //});
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl(primaryUrl, {
+                    accessTokenFactory: () => token
+                }).build();
 
-        connection
-            .start()
-            .then(() => {
-                //connection.invoke("JoinGroup", `camera_${this.cameraId}_human_detected`);
-                connection.invoke("JoinGroup", `camera_${this.cameraId}`);
-                return
+            connection.on("ReceiveForwardedMessage", data => {
+                this.displayFrame(data, img);
+            });
 
-            })
-            .catch(err => console.error("SignalR Error:", err.toString()));
+            connection.start()
+                .then(() => {
+                    connection.invoke("JoinGroup", `${this.cameraName}`);
+                    connection.invoke("StartStreaming", `${this.cameraName}`);
+                })
+                .catch(() => {
+                    if (fallbackUrl) {
+                        // Retry once with remote URL
+                        console.warn("Trying remote URL:", fallbackUrl);
+                        startConnection(fallbackUrl, null);
+                    }
+                });
+
+            // Stop streaming on page unload
+            window.addEventListener("beforeunload", () => {
+                connection.invoke("StopStreaming", `${this.cameraName}`)
+                    .catch(() => { }); // Ignore errors if connection is already closed
+            });
+
+            // Stop streaming on connection close
+            connection.onclose(() => {
+                connection.invoke("StopStreaming", `${this.cameraName}`)
+                    .catch(() => { }); // Ignore errors if connection is already closed
+            });
+        };
+
+        startConnection(this.localHubUrl, this.remoteHubUrl);
     }
 });
 

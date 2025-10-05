@@ -3,18 +3,21 @@
 using CameraFeed.Processor.BackgroundServices;
 using CameraFeed.Processor.Camera.Worker;
 using CameraFeed.Processor.Clients.gRPC;
+using CameraFeed.Processor.Clients.SignalR;
 using CameraFeed.Processor.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 
-public static class ServiceCollectionExtensions
+public static class DependencyInjectionSetup
 {
-    public static void AddProcessorServices(this IServiceCollection services)
+    public static void SetupDependencyInjection(this IServiceCollection services)
     {
         services.AddScoped<IWorkerRepository, WorkerRepository>();
 
         services.AddSingleton<IObjectDetectionGrpcClient, ObjectDetectionGrpcClient>();
         services.AddSingleton<ICameraWorkerFactory, CameraWorkerFactory>();
         services.AddSingleton<IVideoCaptureFactory, VideoCaptureFactory>();
+        services.AddSingleton<ICameraSignalRclient, CameraSignalRClient>();
+        services.AddSingleton<IHubConnectionFactory, HubConnectionFactory>();
         services.AddSingleton<IBackgroundSubtractorFactory, BackgroundSubtractorFactory>();
 
         //services.AddSingleton<CameraWorkerStartupService>(); //Registers the concrete type as a singleton (needed for hosted service resolution).

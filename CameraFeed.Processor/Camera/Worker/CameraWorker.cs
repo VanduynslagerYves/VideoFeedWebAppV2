@@ -1,10 +1,9 @@
 ﻿using Emgu.CV;
 using Emgu.CV.Structure;
 using Emgu.CV.CvEnum;
-using Microsoft.AspNetCore.SignalR;
 using CameraFeed.Processor.Clients.gRPC;
+using CameraFeed.Processor.Clients.SignalR;
 using CameraFeed.Processor.Extensions;
-using CameraFeed.Processor.Clients;
 
 namespace CameraFeed.Processor.Camera.Worker;
 
@@ -19,10 +18,10 @@ public interface ICameraWorker
 
 public abstract class CameraWorkerBase : ICameraWorker
 {
-    protected readonly IObjectDetectionGrpcClient _objectDetectionClient;
-    protected readonly IHubContext<CameraHub> _hubContext;
-    protected readonly IBackgroundSubtractorFactory _backgroundSubtractorFactory;
+    protected readonly ICameraSignalRclient _signalRclient;
     protected readonly IVideoCaptureFactory _videoCaptureFactory;
+    protected readonly IBackgroundSubtractorFactory _backgroundSubtractorFactory;
+    protected readonly IObjectDetectionGrpcClient _objectDetectionClient;
     protected readonly WorkerProperties _options;
 
     protected readonly int _frameSkip = 3;
@@ -34,14 +33,13 @@ public abstract class CameraWorkerBase : ICameraWorker
     protected bool _lastMotionResult = false;
     protected Mat _downscaledFrame = new();
 
-    public CameraWorkerBase(WorkerProperties options, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient,
-        IHubContext<CameraHub> hubContext)
+    public CameraWorkerBase(WorkerProperties options, ICameraSignalRclient cameraSignalRClient, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient)
     {
         _options = options;
+        _signalRclient = cameraSignalRClient;
         _videoCaptureFactory = videoCaptureFactory;
         _backgroundSubtractorFactory = backgroundSubtractorFactory;
         _objectDetectionClient = objectDetectionClient;
-        _hubContext = hubContext;
 
         CamId = options.CameraOptions.Id;
         CamName = options.CameraOptions.Name;
@@ -55,8 +53,6 @@ public abstract class CameraWorkerBase : ICameraWorker
         _motionThreshold = (int)(downscaledArea * options.MotionDetectionOptions.MotionRatio);
     }
 
-    protected string NotifyImageGroup => $"camera_{CamId}";
-
     public int CamId { get; }
     public string CamName { get; }
     public int CamWidth { get; }
@@ -65,8 +61,8 @@ public abstract class CameraWorkerBase : ICameraWorker
     public abstract Task RunAsync(CancellationToken token);
 }
 
-public class CameraWorker(WorkerProperties options, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient,
-    ILogger<CameraWorker> logger, IHubContext<CameraHub> hubContext) : CameraWorkerBase(options, videoCaptureFactory, backgroundSubtractorFactory, objectDetectionClient, hubContext)
+public class CameraWorker(WorkerProperties options, ICameraSignalRclient signalRclient, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient,
+    ILogger<CameraWorker> logger) : CameraWorkerBase(options, signalRclient, videoCaptureFactory, backgroundSubtractorFactory, objectDetectionClient)
 {
     private readonly ILogger<CameraWorker> _logger = logger;
 
@@ -74,6 +70,8 @@ public class CameraWorker(WorkerProperties options, IVideoCaptureFactory videoCa
     {
         try
         {
+            await _signalRclient.CreateConnectionsAsync(CamName, token);
+            
             using var capture = await _videoCaptureFactory.CreateAsync(_options);
             using var subtractor = await _backgroundSubtractorFactory.CreateAsync(type: BackgroundSubtractorType.MOG2);
             using var foregroundMask = new Mat();
@@ -83,17 +81,20 @@ public class CameraWorker(WorkerProperties options, IVideoCaptureFactory videoCa
                 using var capturedFrame = capture!.QueryFrame();
                 if (capturedFrame == null || capturedFrame.IsEmpty) continue;
 
-                var imageByteArray = ConvertFrameToByteArray(capturedFrame);
+                var imageByteArray = ProcessFrame(capturedFrame);
+                if (imageByteArray == null) continue; // Drop oversized frames
 
                 if (ShouldRunInference(capturedFrame, foregroundMask, subtractor))
                 {
                     imageByteArray = await RunInference(imageByteArray, token);
                 }
-                
-                await SendFrameToClientsAsync(imageByteArray, token);
+
+                await _signalRclient.SendFrame(imageByteArray, CamName, token);
             }
+
+            await _signalRclient.StopAndDisposeConnectionsAsync(CamName, token);
         }
-        catch(OperationCanceledException)
+        catch (OperationCanceledException)
         {
             _logger.LogInformation("CameraWorker for camera {cameraId} was cancelled.", CamId);
         }
@@ -109,7 +110,7 @@ public class CameraWorker(WorkerProperties options, IVideoCaptureFactory videoCa
 
     private bool ShouldRunInference(Mat capturedFrame, Mat fgMask, IBackgroundSubtractorAdapter subtractor)
     {
-        switch(_options.Mode)
+        switch (_options.Mode)
         {
             case InferenceMode.Continuous:
                 return true;
@@ -126,14 +127,6 @@ public class CameraWorker(WorkerProperties options, IVideoCaptureFactory videoCa
         return await _objectDetectionClient.DetectObjectsAsync(frameData, cancellationToken);
     }
 
-    /// <summary>
-    /// Determines whether significant motion is detected in the current video frame.
-    /// Optimized for CPU usage by downscaling and frame skipping.
-    /// </summary>
-    /// <param name="frame">The original captured video frame.</param>
-    /// <param name="foregroundMask">A Mat to store the resulting foreground mask.</param>
-    /// <param name="subtractor">The background subtractor instance.</param>
-    /// <returns>True if motion is detected, otherwise false.</returns>
     protected virtual bool MotionDetected(Mat frame, Mat foregroundMask, IBackgroundSubtractorAdapter subtractor)
     {
         if (_frameCounter++ % _frameSkip != 0) return _lastMotionResult; // Only process every n-th frame, by frame skipping, to reduce CPU usage
@@ -167,15 +160,20 @@ public class CameraWorker(WorkerProperties options, IVideoCaptureFactory videoCa
         return motionDetected;
     }
 
-    protected virtual byte[] ConvertFrameToByteArray(Mat frame, int quality = 78)
+    protected virtual byte[]? ProcessFrame(Mat frame, int quality = 78, int maxSize = 200 * 1024) //200kB max size for image, so we have 100kB overhead in SignalR (max 256kB)
     {
-        // Encode the Mat to JPEG directly into a byte array
-        return frame.ToImage<Bgr, byte>().ToJpegData(quality);
-    }
+        using var image = frame.ToImage<Bgr, byte>();
+        var jpegData = image.ToJpegData(quality);
+        if (jpegData == null || jpegData.Length == 0) return null;
 
-    protected virtual async Task SendFrameToClientsAsync(byte[] imageByteArray, CancellationToken token)
-    {
-        await _hubContext.Clients.Group(NotifyImageGroup).SendAsync("ReceiveImgBytes", imageByteArray, token);
+        // Drop frame if it exceeds the maximum allowed size (set in SocketServer SignalR options, TODO: get from SocketServer SignalR options)
+        if (jpegData.Length >= maxSize)
+        {
+            _logger.LogWarning("Frame dropped: size {size}kB exceeds max allowed {maxSize}kB.", jpegData.Length / 1024, maxSize / 1024);
+            return null;
+        }
+
+        return jpegData;
     }
 }
 
