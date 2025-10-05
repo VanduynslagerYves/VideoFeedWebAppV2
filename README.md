@@ -1,10 +1,13 @@
 # Technical Summary
 ## Architecture Overview
-The system is designed for real-time camera feed processing and delivery, using a broker/relay (SocketServer) to decouple internal processing from external clients. The architecture consists of three main components:
+The system is designed for real-time camera feed processing and delivery, using a broker/relay (SocketServer) to decouple internal processing from external clients. The system uses a dual SocketServer approach for real-time camera streaming. The architecture consists of four main components:
 - Processor:
 Runs on the internal network, manages camera workers, processes video streams, and sends frames to the SocketServer.
--	SocketServer:
-Hosted with the Processor and in the cloud, acts as a broker and fallback for real-time communication. It relays frames and control messages between the Processor and frontend clients.
+-	SocketServer (internal):
+Preferred for all communication when the frontend and Processor are on th e same network, minimizing latency and cloud data transfer costs.
+Acts as a broker for real-time communication. It relays frames and control messages between the Processor and frontend clients.
+- SocketServer (remote/cloud):
+Acts as a fallback when the frontend is outside the internal network, ensuring connectivity accross NAT/firewalls.
 -	Frontend (Angular):
 Connects to the SocketServer to receive video frames and send control commands.
 ## Key Challenges & Solutions
