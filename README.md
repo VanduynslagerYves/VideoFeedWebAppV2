@@ -11,7 +11,7 @@ Connects to the SocketServer to receive video frames and send control commands.
 -	NAT Traversal:
 By using a cloud-hosted SocketServer, the architecture avoids direct inbound connections to the internal Processor, bypassing NAT/firewall issues.
 -	Cost Optimization:
-The current relay model is simple but can be costly due to high data transfer through the SocketServer. Considering a hybrid approach (using the SocketServer for control and direct streaming for video) can reduce costs, but introduces new challenges (NAT, browser limitations).
+The current relay model is simple but can be costly due to high data transfer through the SocketServer, frames should be sent as small as possible (todo). Considering a WebRTC approach can reduce costs, but introduces new challenges (complex setup).
 -	Browser Compatibility:
 The frontend uses standard browser technologies (WebSockets) to communicate with the SocketServer, ensuring compatibility and security.
 ## Reasoning
