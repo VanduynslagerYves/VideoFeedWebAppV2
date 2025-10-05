@@ -3,12 +3,9 @@
 public static class CorsSetup
 {
     static readonly string[] _frontendUrls = [
-        "https://localhost:7006", //razor https client
+        "https://localhost:7006", //razor https client (can be deleted)
         "https://localhost:4200", //angular https client
         "http://localhost:4200", //angular http client
-        //"https://katacam-g7fchjfvhucgf8gq.northeurope-01.azurewebsites.net",
-        //"https://localhost:44300",
-        //"https://pure-current-mastodon.ngrok-free.app"
         ];
 
     static readonly string _policyName = "AllowFrontend";

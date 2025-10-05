@@ -1,1 +1,0 @@
-ngrok http --url=pure-current-mastodon.ngrok-free.app 5198

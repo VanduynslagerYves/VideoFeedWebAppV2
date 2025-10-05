@@ -81,15 +81,15 @@ public class CameraWorker(WorkerProperties options, ICameraSignalRclient signalR
                 using var capturedFrame = capture!.QueryFrame();
                 if (capturedFrame == null || capturedFrame.IsEmpty) continue;
 
-                var imageByteArray = ProcessFrame(capturedFrame);
-                if (imageByteArray == null) continue; // Drop oversized frames
+                var imageData = ProcessFrame(capturedFrame);
+                if (imageData == null) continue; // Drop oversized frames
 
                 if (ShouldRunInference(capturedFrame, foregroundMask, subtractor))
                 {
-                    imageByteArray = await RunInference(imageByteArray, token);
+                    imageData = await RunInference(imageData, token);
                 }
 
-                await _signalRclient.SendFrame(imageByteArray, CamName, token);
+                await _signalRclient.SendFrame(imageData, CamName, token);
             }
 
             await _signalRclient.StopAndDisposeConnectionsAsync(CamName, token);
