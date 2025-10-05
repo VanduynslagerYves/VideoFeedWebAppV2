@@ -2,6 +2,7 @@ import { Component, Input, ElementRef, ViewChild, AfterViewInit, OnDestroy, Chan
 import * as signalR from '@microsoft/signalr';
 import { take } from 'rxjs/operators';
 import { AuthService } from '@auth0/auth0-angular';
+import { MessagePackHubProtocol } from '@microsoft/signalr-protocol-msgpack';
 
 @Component({
   selector: 'app-cam',
@@ -28,7 +29,7 @@ export class Cam implements AfterViewInit, OnDestroy {
    * Only the most recent frame is kept to minimize latency and avoid backlog—
    * intermediate frames are dropped if multiple arrive during image loading.
    */
-  private latestPendingFrame: string | null = null;
+  private latestPendingFrame: Uint8Array | null = null;
 
   /** Indicates if an image is currently being loaded into the canvas */
   private loading = false;
@@ -89,10 +90,11 @@ export class Cam implements AfterViewInit, OnDestroy {
       .withUrl(hubUrl, {
         accessTokenFactory: () => token
       })
+      .withHubProtocol(new MessagePackHubProtocol())
       .build();
 
     // Listen for incoming image bytes from the server
-    this.connection.on('ReceiveForwardedMessage', (data: string) => {
+    this.connection.on('ReceiveForwardedMessage', (data: Uint8Array) => {
       this.isCameraLoading = false; // Update camera loading state
       this.cdr.detectChanges(); // Trigger change detection to update the UI
       this.displayFrame(data);
@@ -146,13 +148,17 @@ export class Cam implements AfterViewInit, OnDestroy {
   /**
    * Draw a frame (base64 JPEG) on the canvas, with loading logic
    */
-  private displayFrame(data: string) {
+  private displayFrame(data: Uint8Array) {
     if (this.loading) {
       this.latestPendingFrame = data;
       return;
     }
     this.loading = true;
-    this.img.src = 'data:image/jpeg;base64,' + data;
+
+    // Convert incoming data to a standard Uint8Array for Blob compatibility
+    const uint8Data = new Uint8Array(data); // Copies data into a new Uint8Array backed by ArrayBuffer
+    const blob = new Blob([uint8Data], { type: 'image/jpeg' });
+    this.img.src = URL.createObjectURL(blob);
   }
 
   /**

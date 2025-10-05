@@ -13,9 +13,9 @@ builder.Services.SetupDependencyInjection();
 builder.Services.AddControllers();
 builder.Services.AddSignalR(options =>
 {
-    options.MaximumReceiveMessageSize = 200 * 1024; //200 KB
+    options.MaximumReceiveMessageSize = 300 * 1024; //200 KB for image + 100Kb for overhead
     options.EnableDetailedErrors = true;
-});
+}).AddMessagePackProtocol();
 
 var connectionString = builder.Configuration.GetConnectionString("ApiKeyDb");
 builder.Services.AddDatabase(connectionString);

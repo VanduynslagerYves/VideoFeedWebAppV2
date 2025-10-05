@@ -3,6 +3,7 @@
 using CameraFeed.Processor.BackgroundServices;
 using CameraFeed.Processor.Camera.Worker;
 using CameraFeed.Processor.Clients.gRPC;
+using CameraFeed.Processor.Clients.SignalR;
 using CameraFeed.Processor.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,6 +16,7 @@ public static class DependencyInjectionSetup
         services.AddSingleton<IObjectDetectionGrpcClient, ObjectDetectionGrpcClient>();
         services.AddSingleton<ICameraWorkerFactory, CameraWorkerFactory>();
         services.AddSingleton<IVideoCaptureFactory, VideoCaptureFactory>();
+        services.AddSingleton<ICameraSignalRclient, CameraSignalRClient>();
         services.AddSingleton<IHubConnectionFactory, HubConnectionFactory>();
         services.AddSingleton<IBackgroundSubtractorFactory, BackgroundSubtractorFactory>();
 

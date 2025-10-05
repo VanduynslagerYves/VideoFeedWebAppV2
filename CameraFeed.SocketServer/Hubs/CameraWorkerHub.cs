@@ -16,7 +16,7 @@ public class CameraWorkerHub(IFrontendForwarder forwarder, ILogger<CameraWorkerH
         var httpContext = Context.GetHttpContext();
         var apiKey = httpContext?.Request.Headers["X-API-KEY"].FirstOrDefault();
         
-        if(string.IsNullOrEmpty(apiKey) || apiKey != "123456789")
+        if(string.IsNullOrEmpty(apiKey) || apiKey != "e4b7c1f2-8a3d-4e6b-9c2a-7f5d1b8e3c4a")
         {
             Context.Abort();
             return;
