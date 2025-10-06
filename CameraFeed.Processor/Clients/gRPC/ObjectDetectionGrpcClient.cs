@@ -21,10 +21,10 @@ public class ObjectDetectionGrpcClient : IObjectDetectionGrpcClient, IDisposable
     {
         _logger = logger;
         (_channel, _client) = ObjectDetectionClientFactory.CreateWithChannel();
-        _circuitBreakerPolicy = CircuitBreakerPolicyFactory.CreateGrpcCircuitBreakerPolicy(_logger);
+        _circuitBreakerPolicy = CircuitBreakerFactory.CreateCircuitBreakerPolicy<RpcException>("gRPC", _logger);
     }
 
-    public async Task<byte[]> DetectObjectsAsync(byte[] imageData, CancellationToken cancellationToken = default)
+    public async Task<byte[]> DetectObjectsAsync(byte[] imageData, CancellationToken token = default)
     {
         if (_circuitBreakerPolicy.CircuitState == CircuitState.Open) return imageData;
 
@@ -32,11 +32,11 @@ public class ObjectDetectionGrpcClient : IObjectDetectionGrpcClient, IDisposable
         {
             return await _circuitBreakerPolicy.ExecuteAsync(async ct =>
             {
-                using var call = _client.DetectObjects(cancellationToken: cancellationToken);
-                await call.RequestStream.WriteAsync(new ImageRequest { ImageData = ByteString.CopyFrom(imageData) }, cancellationToken);
+                using var call = _client.DetectObjects(cancellationToken: token);
+                await call.RequestStream.WriteAsync(new ImageRequest { ImageData = ByteString.CopyFrom(imageData) }, token);
                 await call.RequestStream.CompleteAsync();
 
-                if (await call.ResponseStream.MoveNext(cancellationToken))
+                if (await call.ResponseStream.MoveNext(token))
                 {
                     var response = call.ResponseStream.Current;
                     return response.ProcessedImage.ToByteArray();
@@ -44,16 +44,10 @@ public class ObjectDetectionGrpcClient : IObjectDetectionGrpcClient, IDisposable
 
                 _logger.LogWarning("No response received from gRPC server.");
                 return imageData;
-            }, cancellationToken);
-        }
-        catch (RpcException)
-        {
-            //_logger.LogWarning(ex, "gRPC request failed when detecting objects.");
-            return imageData;
+            }, token);
         }
         catch (Exception)
         {
-            //_logger.LogError(ex, "Unexpected error when detecting objects via gRPC.");
             return imageData;
         }
     }
@@ -62,6 +56,9 @@ public class ObjectDetectionGrpcClient : IObjectDetectionGrpcClient, IDisposable
     public void Dispose()
     {
         GC.SuppressFinalize(this);
+
+        // Disposing the gRPC channel is important to release underlying resources such as sockets and HTTP connections.
+        // This helps prevent resource leaks, especially in long-running applications.
         _channel?.Dispose();
     }
 }

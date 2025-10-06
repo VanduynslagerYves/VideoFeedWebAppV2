@@ -32,7 +32,12 @@ public class CameraWorkerHandle(ICameraWorker worker, CancellationTokenSource ct
         // The async delegate is handled correctly by Task.Run, so we do not await the call to RunAsync here. This avoids an extra state machine.
         // When you write an async method, the C# compiler automatically generates a state machine behind the scenes.
         // This state machine keeps track of where the method should resume after each await, allowing your code to pause and continue asynchronously without blocking the thread.
-        RunningTask ??= Task.Run(() => Worker.RunAsync(Cts.Token));
+
+        //Run on the thread pool for CPU heavey work
+        //RunningTask ??= Task.Run(() => Worker.RunAsync(Cts.Token));
+
+        //No need to put this on the thread pool, since it is just I/O
+        RunningTask ??= Worker.RunAsync(Cts.Token);
         return Task.CompletedTask;
     }
 
