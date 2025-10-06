@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
+using Polly.Retry;
 using System.Collections.Concurrent;
 using System.Threading.Channels;
 
@@ -62,10 +63,12 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
     /// and should be used with proper cancellation tokens to ensure graceful shutdowns. </para></remarks>
     private sealed class MessageActor : IMessageActor
     {
-        private readonly Channel<ChannelMessage> _messageChannel = Channel.CreateUnbounded<ChannelMessage>();
-        private readonly string _camName;
-        private readonly IHubConnectionFactory _hubConnectionFactory;
         private readonly ILogger<CameraSignalRClient> _logger;
+        private readonly string _camName;
+        private readonly Channel<ChannelMessage> _messageChannel = Channel.CreateUnbounded<ChannelMessage>();
+        private readonly IHubConnectionFactory _hubConnectionFactory;
+        private readonly AsyncRetryPolicy _retryStartConnectionPolicy;
+
         private HubConnection? _remoteHubConnection;
         private HubConnection? _localHubConnection;
         private bool _remoteStreamingEnabled;
@@ -74,7 +77,9 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
         {
             _camName = camName;
             _hubConnectionFactory = hubConnectionFactory;
+            _retryStartConnectionPolicy = CircuitBreakerFactory.CreateRestartPolicy<HttpRequestException>(camName, "SignalR", logger);
             _logger = logger;
+
             _ = RunAsync();
         }
 
@@ -120,6 +125,13 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
                     _logger.LogInformation("Remote streaming disabled for {camName}", _camName);
                 });
 
+            // Automatic reconnect on close
+            _remoteHubConnection.Closed += async (error) =>
+            {
+                _logger.LogWarning("Remote connection closed for {camName}. Attempting to reconnect...", _camName);
+                await StartAndJoinAsync(_remoteHubConnection, "Remote", token);
+            };
+
             _localHubConnection = _hubConnectionFactory.CreateLocalConnection(
                 onStreamingEnabled: () =>
                 {
@@ -130,28 +142,31 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
                     _logger.LogInformation("Local streaming disabled for {camName}", _camName);
                 });
 
+            // Automatic reconnect on close
+            _localHubConnection.Closed += async (error) =>
+            {
+                _logger.LogWarning("Local connection closed for {camName}. Attempting to reconnect...", _camName);
+                await StartAndJoinAsync(_localHubConnection, "Local", token);
+            };
+
             _remoteStreamingEnabled = false;
 
-            await Task.WhenAll(
-                StartAndJoinAsync(_localHubConnection, "Local", token),
-                StartAndJoinAsync(_remoteHubConnection, "Remote", token)
-            );
+            _ = StartAndJoinAsync(_localHubConnection, "Local", token);
+            _ = StartAndJoinAsync(_remoteHubConnection, "Remote", token);
         }
 
         private async Task StartAndJoinAsync(HubConnection connection, string hubType, CancellationToken token)
         {
             try
             {
-                if (connection.State == HubConnectionState.Disconnected)
+                await _retryStartConnectionPolicy.ExecuteAsync(async ct =>
                 {
+                    if (connection.State != HubConnectionState.Disconnected) return;
+
                     await connection.StartAsync(token);
                     await connection.InvokeAsync("JoinGroup", _camName, token);
                     _logger.LogInformation("{HubType} HubConnection initialized for {camName}", hubType, _camName);
-                }
-                else
-                {
-                    _logger.LogWarning("{HubType} HubConnection for {camName} is not in Disconnected state (current: {State})", hubType, _camName, connection.State);
-                }
+                }, token);
             }
             catch (OperationCanceledException)
             {
@@ -160,7 +175,7 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Error initializing {HubType} HubConnection for {camName}: {Message}", hubType, _camName, ex.Message);
+                _logger.LogError("Error initializing {HubType} HubConnection for {camName}: {Message}", hubType, _camName, ex.Message);
             }
         }
 
