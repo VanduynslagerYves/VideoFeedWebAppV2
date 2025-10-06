@@ -91,29 +91,11 @@ export class Cam implements AfterViewInit, OnDestroy {
         accessTokenFactory: () => token
       })
       .withHubProtocol(new MessagePackHubProtocol())
+      .withAutomaticReconnect()
       .build();
 
-    // Listen for incoming image bytes from the server
-    this.connection.on('ReceiveForwardedMessage', (data: Uint8Array) => {
-      this.isCameraLoading = false; // Update camera loading state
-      this.cdr.detectChanges(); // Trigger change detection to update the UI
-      this.displayFrame(data);
-    });
-    
-    // Stop streaming on connection close
     const groupName = `Camera ${this.cameraId}`;
-    this.connection.onclose(() => {
-      this.connection.invoke('StopStreaming', groupName)
-        .catch(() => { /* Ignore errors if connection is already closed */ });
-    });
-
-    // Stop streaming on page unload (add and store handler)
-    this.beforeUnloadHandler = () => {
-      this.connection.invoke('StopStreaming', groupName)
-        .catch(() => { /* Ignore errors if connection is already closed */ });
-    };
-    window.addEventListener('beforeunload', this.beforeUnloadHandler);
-
+    
     // Start the SignalR connection and join the group for this camera
     this.connection.start()
       .then(() => {
@@ -143,11 +125,46 @@ export class Cam implements AfterViewInit, OnDestroy {
         console.error('SignalR Error:', err.toString());
       }
     });
+
+    // Listen for incoming image bytes from the server
+    this.connection.on('ReceiveForwardedMessage', (data: Uint8Array) => {
+      this.isCameraLoading = false; // Update camera loading state
+      this.cdr.detectChanges(); // Trigger change detection to update the UI
+      this.displayFrame(data);
+    });
+
+    // Show reconnecting state
+    this.connection.onreconnecting((error) => {
+      this.isCameraLoading = true;
+      this.cdr.detectChanges();
+      console.warn('SignalR reconnecting...', error);
+    });
+
+    // After reconnect, re-join group and restart streaming
+    this.connection.onreconnected(() => {
+      this.isCameraLoading = false;
+      this.cdr.detectChanges();
+      this.connection.invoke('JoinGroup', groupName)
+        .then(() => this.connection.invoke('StartStreaming', groupName))
+        .catch(err => console.error('Error rejoining group after reconnect', err));
+    });
+
+    // If connection is closed and will NOT reconnect, update UI
+    this.connection.onclose((error) => {
+      this.isCameraLoading = true;
+      this.cdr.detectChanges();
+      console.error('SignalR connection closed', error);
+    });
+
+    // Stop streaming on page unload (add and store handler)
+    this.beforeUnloadHandler = () => {
+      this.connection.invoke('StopStreaming', groupName)
+        .catch(() => { /* Ignore errors if connection is already closed */ });
+    };
+
+    window.addEventListener('beforeunload', this.beforeUnloadHandler);
   }
 
-  /**
-   * Draw a frame (base64 JPEG) on the canvas, with loading logic
-   */
   private displayFrame(data: Uint8Array) {
     if (this.loading) {
       this.latestPendingFrame = data;
@@ -175,6 +192,5 @@ export class Cam implements AfterViewInit, OnDestroy {
       window.removeEventListener('beforeunload', this.beforeUnloadHandler);
       this.beforeUnloadHandler = null;
     }
-    // If you add more SignalR event listeners, remove them here for memory safety
   }
 }
