@@ -1,0 +1,51 @@
+﻿<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Processed Live Stream (HLS)</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+</head>
+<body>
+    <h1>Processed Live Stream (HLS)</h1>
+    <video id="video" controls autoplay muted playsinline style="width:640px; height:360px;"></video>
+
+    <script>
+        const video = document.getElementById('video');
+        const url = '/stream/stream.m3u8';
+
+        function tryLoadStream(retries = 10) {
+            fetch(url, { method: 'HEAD' })
+                .then(res => {
+                    if (res.ok) {
+                        if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                            video.src = url;
+                            video.play();
+                        } else if (Hls.isSupported()) {
+                            const hls = new Hls();
+                            hls.loadSource(url);
+                            hls.attachMedia(video);
+                            hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                                video.play();
+                            });
+                        } else {
+                            document.body.insertAdjacentHTML('beforeend', '<p>HLS not supported in this browser.</p>');
+                        }
+                    } else if (retries > 0) {
+                        setTimeout(() => tryLoadStream(retries - 1), 1000);
+                    } else {
+                        document.body.insertAdjacentHTML('beforeend', '<p>Stream not available.</p>');
+                    }
+                })
+                .catch(() => {
+                    if (retries > 0) {
+                        setTimeout(() => tryLoadStream(retries - 1), 1000);
+                    } else {
+                        document.body.insertAdjacentHTML('beforeend', '<p>Stream not available.</p>');
+                    }
+                });
+        }
+
+        tryLoadStream();
+    </script>
+</body>
+</html>
