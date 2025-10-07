@@ -46,6 +46,10 @@ public class ObjectDetectionGrpcClient : IObjectDetectionGrpcClient, IDisposable
                 return imageData;
             }, token);
         }
+        //catch(RpcException)
+        //{
+        //    return imageData;
+        //}
         catch (Exception)
         {
             return imageData;

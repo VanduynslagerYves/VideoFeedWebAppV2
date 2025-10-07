@@ -47,10 +47,10 @@ public static class CircuitBreakerFactory
 public class CircuitBreakerOptions
 {
     public int ExceptionThreshold { get; set; } = 3;
-    public TimeSpan BreakDuration { get; set; } = TimeSpan.FromSeconds(10);
+    public TimeSpan BreakDuration { get; set; } = TimeSpan.FromSeconds(30);
 }
 
 public class RestartOptions
 {
-    public TimeSpan BreakDuration { get; set; } = TimeSpan.FromSeconds(10);
+    public TimeSpan BreakDuration { get; set; } = TimeSpan.FromSeconds(60);
 }
