@@ -164,18 +164,27 @@ export class Cam implements AfterViewInit, OnDestroy {
 
     window.addEventListener('beforeunload', this.beforeUnloadHandler);
   }
+  /** Store the last object URL to revoke it and prevent memory leaks */
+  private lastObjectUrl: string | null = null;
 
   private displayFrame(data: Uint8Array) {
     if (this.loading) {
-      this.latestPendingFrame = data;
-      return;
-    }
-    this.loading = true;
+    this.latestPendingFrame = data;
+    return;
+  }
+  this.loading = true;
 
-    // Convert incoming data to a standard Uint8Array for Blob compatibility
-    const uint8Data = new Uint8Array(data); // Copies data into a new Uint8Array backed by ArrayBuffer
-    const blob = new Blob([uint8Data], { type: 'image/jpeg' });
-    this.img.src = URL.createObjectURL(blob);
+  // Convert incoming data to a standard Uint8Array for Blob compatibility
+  const uint8Data = new Uint8Array(data);
+  const blob = new Blob([uint8Data], { type: 'image/jpeg' });
+
+  // Revoke previous object URL to prevent memory leaks
+  if (this.lastObjectUrl) {
+    URL.revokeObjectURL(this.lastObjectUrl);
+  }
+  
+  this.lastObjectUrl = URL.createObjectURL(blob);
+  this.img.src = this.lastObjectUrl;
   }
 
   /**
@@ -192,5 +201,12 @@ export class Cam implements AfterViewInit, OnDestroy {
       window.removeEventListener('beforeunload', this.beforeUnloadHandler);
       this.beforeUnloadHandler = null;
     }
+
+    // Revoke the last object URL to free memory
+    if (this.lastObjectUrl) {
+      URL.revokeObjectURL(this.lastObjectUrl);
+      this.lastObjectUrl = null;
+    }
+    
   }
 }
