@@ -1,6 +1,6 @@
 import { Component, Input, ElementRef, ViewChild, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { AuthService } from '@auth0/auth0-angular';
-import { SignalRConnection } from './signalrConection';
+import { SignalRConnection } from './cam.connection';
 
 @Component({
   selector: 'app-cam',
@@ -64,7 +64,6 @@ export class Cam implements AfterViewInit, OnDestroy {
       }
     };
     
-    //const camName = `Camera ${this.cameraId}`;
     this.connection = this.initConnection();
     this.connection.start();
   }
