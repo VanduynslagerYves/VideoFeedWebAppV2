@@ -54,7 +54,7 @@ public class CameraWorkerStartupService(IServiceProvider serviceProvider, ICamer
 
             try
             {
-                var workerEntry = await _workerManager.CreateAsync(options, cancellationToken);
+                var workerEntry = _workerManager.Create(options, cancellationToken);
                 if(workerEntry.RunningTask == null) await _workerManager.StartAsync(workerEntry);
             }
             catch (Exception ex)

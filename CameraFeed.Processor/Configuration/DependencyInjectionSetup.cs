@@ -11,19 +11,24 @@ public static class DependencyInjectionSetup
 {
     public static void SetupDependencyInjection(this IServiceCollection services)
     {
+        //Repositories
         services.AddScoped<IWorkerRepository, WorkerRepository>();
 
+        //Clients
         services.AddSingleton<IObjectDetectionGrpcClient, ObjectDetectionGrpcClient>();
-        services.AddSingleton<ICameraWorkerFactory, CameraWorkerFactory>();
-        services.AddSingleton<IVideoCaptureFactory, VideoCaptureFactory>();
         services.AddSingleton<ICameraSignalRclient, CameraSignalRClient>();
+
+        //Factories
+        services.AddSingleton<ICameraWorkerFactory, CameraWorkerFactory>();
         services.AddSingleton<IHubConnectionFactory, HubConnectionFactory>();
+        services.AddSingleton<IFrameProcessorFactory, FrameProcessorFactory>();
+        services.AddSingleton<IVideoCaptureFactory, VideoCaptureFactory>();
         services.AddSingleton<IBackgroundSubtractorFactory, BackgroundSubtractorFactory>();
 
-        //services.AddSingleton<CameraWorkerStartupService>(); //Registers the concrete type as a singleton (needed for hosted service resolution).
-        //services.AddSingleton<ICameraWorkerStartupService>(sp => sp.GetRequiredService<CameraWorkerStartupService>()); //Allows to inject the interface everywhere else, but both resolve to the same singleton instance.
-        //services.AddHostedService(sp => sp.GetRequiredService<CameraWorkerStartupService>()); //Tells the hosted service system to use the singleton CameraWorkerManager instance.
-        services.AddHostedService<CameraWorkerStartupService>();
+        //Managers
         services.AddSingleton<ICameraWorkerManager, CameraWorkerManager>();
+
+        //Background Services
+        services.AddHostedService<CameraWorkerStartupService>();
     }
 }

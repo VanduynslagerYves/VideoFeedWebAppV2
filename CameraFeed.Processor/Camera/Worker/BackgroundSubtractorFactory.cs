@@ -5,23 +5,20 @@ namespace CameraFeed.Processor.Camera.Worker;
 
 public interface IBackgroundSubtractorFactory
 {
-    Task<IBackgroundSubtractorAdapter> CreateAsync(BackgroundSubtractorType type);
+    IBackgroundSubtractorAdapter Create(BackgroundSubtractorType type);
 }
 
 public class BackgroundSubtractorFactory : IBackgroundSubtractorFactory
 {
-    public Task<IBackgroundSubtractorAdapter> CreateAsync(BackgroundSubtractorType type)
+    public IBackgroundSubtractorAdapter Create(BackgroundSubtractorType type)
     {
         return type switch
         {
             /* The history parameter controls how quickly the background model adapts to changes.
              * Larger history (e.g., 1000): The model adapts slowly, so temporary changes (like a person walking by) are less likely to be absorbed into the background.
              * Smaller history (e.g., 50): The model adapts quickly, so new static objects or lighting changes are incorporated into the background faster. */
-            BackgroundSubtractorType.MOG2 => Task.FromResult<IBackgroundSubtractorAdapter>(
-                new MOG2SubtractorAdapter(new BackgroundSubtractorMOG2(history: 50, shadowDetection: false))),
-
-            BackgroundSubtractorType.CNT => Task.FromResult<IBackgroundSubtractorAdapter>(
-                new CNTSubtractorAdapter(new BackgroundSubtractorCNT(minPixelStability: 15, useHistory: true, maxPixelStability: 15*60, isParallel: true))),
+            BackgroundSubtractorType.MOG2 => new MOG2SubtractorAdapter(new BackgroundSubtractorMOG2(history: 50, shadowDetection: false)),
+            BackgroundSubtractorType.CNT => new CNTSubtractorAdapter(new BackgroundSubtractorCNT(minPixelStability: 15, useHistory: true, maxPixelStability: 15*60, isParallel: true)),
 
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };

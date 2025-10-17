@@ -8,8 +8,10 @@ namespace CameraFeed.Processor.Clients.SignalR;
 public interface ICameraSignalRclient
 {
     Task CreateConnectionsAsync(string camName, CancellationToken token);
-    Task SendFrameAsync(byte[] frameData, string camName, CancellationToken token);
+    Task SendFrameToLocalAsync(byte[]? frameData, string camName, CancellationToken token);
+    Task SendFrameToRemoteAsync(byte[]? frameData, string camName, CancellationToken token);
     Task StopAndDisposeConnectionsAsync(string camName, CancellationToken token);
+    bool IsRemoteStreamingEnabled(string camName);
 }
 
 public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILogger<CameraSignalRClient> logger) : ICameraSignalRclient
@@ -27,11 +29,18 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
         await actor.PostAsync(new ChannelMessage.CreateConnections(token));
     }
 
-    public async Task SendFrameAsync(byte[] frameData, string camName, CancellationToken token)
+    public async Task SendFrameToLocalAsync(byte[]? frameData, string camName, CancellationToken token)
     {
+        if (frameData == null) return;
         if (!_actors.TryGetValue(camName, out var actor)) return;
-        await actor.PostAsync(new ChannelMessage.SendFrame(frameData, token));
+        await actor.PostAsync(new ChannelMessage.SendFrameLocal(frameData, token));
+    }
 
+    public async Task SendFrameToRemoteAsync(byte[]? frameData, string camName, CancellationToken token)
+    {
+        if (frameData == null) return;
+        if (!_actors.TryGetValue(camName, out var actor)) return;
+        await actor.PostAsync(new ChannelMessage.SendFrameRemote(frameData, token));
     }
 
     public async Task StopAndDisposeConnectionsAsync(string camName, CancellationToken token)
@@ -39,6 +48,12 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
         if (!_actors.TryRemove(camName, out var actor)) return;
         await actor.PostAsync(new ChannelMessage.StopAndDispose(token));
         actor.Complete();
+    }
+
+    public bool IsRemoteStreamingEnabled(string camName)
+    {
+        if (!_actors.TryGetValue(camName, out var actor)) return false;
+        return actor.RemoteStreamingEnabled;
     }
 
     #region Actor and message definitions
@@ -50,6 +65,7 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
     {
         Task PostAsync(ChannelMessage message);
         void Complete();
+        bool RemoteStreamingEnabled { get; }
     }
 
     /// <summary>
@@ -71,7 +87,9 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
 
         private HubConnection? _remoteHubConnection;
         private HubConnection? _localHubConnection;
-        private bool _remoteStreamingEnabled;
+        private volatile bool _remoteStreamingEnabled;
+
+        public bool RemoteStreamingEnabled => _remoteStreamingEnabled;
 
         public MessageActor(string camName, IHubConnectionFactory hubConnectionFactory, ILogger<CameraSignalRClient> logger)
         {
@@ -99,8 +117,11 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
                     case ChannelMessage.CreateConnections create:
                         await HandleCreateConnectionsAsync(create.Token);
                         break;
-                    case ChannelMessage.SendFrame send:
-                        await HandleSendFrameAsync(send.FrameData, send.Token);
+                    case ChannelMessage.SendFrameLocal send:
+                        await HandleSendFrameLocalAsync(send.FrameData, send.Token);
+                        break;
+                    case ChannelMessage.SendFrameRemote send:
+                        await HandleSendFrameRemoteAsync(send.FrameData, send.Token);
                         break;
                     case ChannelMessage.StopAndDispose stop:
                         await HandleStopAndDisposeAsync(stop.Token);
@@ -109,12 +130,13 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
             }
         }
 
+        //TODO: Split in HandleCreateLocalConnectionAsync and HandleCreateRemoteConnectionAsync
         private async Task HandleCreateConnectionsAsync(CancellationToken token)
         {
             await HandleStopAndDisposeAsync(token);
 
             _remoteHubConnection = _hubConnectionFactory.CreateRemoteConnection(
-                onStreamingEnabled: () =>
+                onStreamingEnabled: () => //TODO: just move this to CreateRemoteConnection
                 {
                     _remoteStreamingEnabled = true;
                     _logger.LogInformation("Remote streaming enabled for {camName}", _camName);
@@ -179,15 +201,10 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
             }
         }
 
-        private async Task HandleSendFrameAsync(byte[] frameData, CancellationToken token)
+        private async Task HandleSendFrameLocalAsync(byte[] frameData, CancellationToken token)
         {
             try
             {
-                if (_remoteStreamingEnabled && _remoteHubConnection?.State == HubConnectionState.Connected)
-                {
-                    await _remoteHubConnection.InvokeAsync("SendMessage", frameData, _camName, token);
-                }
-
                 if (_localHubConnection?.State == HubConnectionState.Connected)
                 {
                     await _localHubConnection.InvokeAsync("SendMessage", frameData, _camName, token);
@@ -195,7 +212,22 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to send frame to hub for camera {camName}: {Message}", _camName, ex.Message);
+                _logger.LogWarning(ex, "Failed to send frame to local hub for camera {camName}: {Message}", _camName, ex.Message);
+            }
+        }
+
+        private async Task HandleSendFrameRemoteAsync(byte[] frameData, CancellationToken token)
+        {
+            try
+            {
+                if(_remoteStreamingEnabled && _remoteHubConnection?.State == HubConnectionState.Connected)
+                {
+                    await _remoteHubConnection.InvokeAsync("SendMessage", frameData, _camName, token);
+                }
+            }
+            catch(Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send frame to remote hub for camera {camName}: {Message}", _camName, ex.Message);
             }
         }
 
@@ -244,7 +276,8 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
     private abstract record ChannelMessage
     {
         public sealed record CreateConnections(CancellationToken Token) : ChannelMessage;
-        public sealed record SendFrame(byte[] FrameData, CancellationToken Token) : ChannelMessage;
+        public sealed record SendFrameLocal(byte[] FrameData, CancellationToken Token) : ChannelMessage;
+        public sealed record SendFrameRemote(byte[] FrameData, CancellationToken Token) : ChannelMessage;
         public sealed record StopAndDispose(CancellationToken Token) : ChannelMessage;
     }
     #endregion

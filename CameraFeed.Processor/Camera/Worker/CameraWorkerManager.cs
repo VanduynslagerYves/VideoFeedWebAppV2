@@ -6,7 +6,7 @@ namespace CameraFeed.Processor.Camera.Worker;
 
 public interface ICameraWorkerManager
 {
-    Task<IWorkerHandle> CreateAsync(WorkerProperties options, CancellationToken cancellationToken);
+    IWorkerHandle Create(WorkerProperties options, CancellationToken cancellationToken);
     Task<IWorkerHandle> StartAsync(IWorkerHandle workerEntry);
     Task StopAsync(int cameraId);
     Task StopAllAsync();
@@ -20,12 +20,12 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, IMapp
     private readonly ICameraWorkerFactory _cameraWorkerFactory = cameraWorkerFactory;
     private readonly IMapper _mapper = mapper;
 
-    public async Task<IWorkerHandle> CreateAsync(WorkerProperties options, CancellationToken cancellationToken)
+    public IWorkerHandle Create(WorkerProperties options, CancellationToken cancellationToken)
     {
         if (_workerHandles.TryGetValue(options.CameraOptions.Id, out var workerHandle)) return workerHandle; // Return existing worker ID if already exists
 
         var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var worker = await _cameraWorkerFactory.CreateAsync(options);
+        var worker = _cameraWorkerFactory.Create(options);
         workerHandle = new CameraWorkerHandle(worker, cts, null);
         _workerHandles.TryAdd(worker.CamId, workerHandle); // Add the new worker entry to the dictionary
 

@@ -1,18 +1,16 @@
-﻿using CameraFeed.Processor.Clients.gRPC;
-using CameraFeed.Processor.Clients.SignalR;
+﻿using CameraFeed.Processor.Clients.SignalR;
 
 namespace CameraFeed.Processor.Camera.Worker;
 
 public interface ICameraWorkerFactory
 {
-    Task<ICameraWorker> CreateAsync(WorkerProperties options);
+    ICameraWorker Create(WorkerProperties options);
 }
 
-public class CameraWorkerFactory(ICameraSignalRclient signalRclient, IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient, ILogger<CameraWorker> logger) : ICameraWorkerFactory
+public class CameraWorkerFactory(ICameraSignalRclient signalRclient, IFrameProcessorFactory frameProcessorFactory, ILogger<CameraWorker> logger) : ICameraWorkerFactory
 {
-    public Task<ICameraWorker> CreateAsync(WorkerProperties options)
+    public ICameraWorker Create(WorkerProperties options)
     {
-        var worker = new CameraWorker(options, signalRclient, videoCaptureFactory, backgroundSubtractorFactory, objectDetectionClient, logger);
-        return Task.FromResult<ICameraWorker>(worker);
+        return new CameraWorker(options, signalRclient, frameProcessorFactory, logger);
     }
 }
