@@ -38,8 +38,7 @@ public class CameraWorker(WorkerProperties options, ICameraSignalRclient signalR
             //not injected, created per run, Create can stay, just need a Start method (StartAndJoinAsync)
             await _signalRclient.CreateConnectionsAsync(CamName, token);
 
-            using var frameProcessor = _frameProcessorFactory.Create(_options);
-            await frameProcessor.InitializeVideoCaptureAsync();
+            using var frameProcessor = await _frameProcessorFactory.CreateAsync(_options);
 
             while (!token.IsCancellationRequested)
             {
