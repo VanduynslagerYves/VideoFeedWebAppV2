@@ -1,4 +1,4 @@
-﻿using CameraFeed.Processor.Camera.Factories;
+﻿using CameraFeed.Processor.Camera.Adapter;
 using CameraFeed.Processor.Clients.gRPC;
 using CameraFeed.Processor.Extensions;
 using Emgu.CV;
@@ -9,14 +9,11 @@ namespace CameraFeed.Processor.Camera;
 
 public interface IFrameProcessor : IDisposable
 {
-    Task InitializeVideoCaptureAsync();
     Task<byte[]?> QueryAndProcessFrame(int quality = 78, int maxSize = 200 * 1024, CancellationToken cancellationToken = default);
 }
 
 public class FrameProcessor : IFrameProcessor
 {
-    private readonly IVideoCaptureFactory _videoCaptureFactory;
-    private readonly IBackgroundSubtractorFactory _backgroundSubtractorFactory;
     private readonly IObjectDetectionGrpcClient _objectDetectionClient;
     private readonly ILogger<FrameProcessor> _logger;
     private readonly WorkerProperties _options;
@@ -33,17 +30,15 @@ public class FrameProcessor : IFrameProcessor
     private int _frameCounter = 0;
     private bool _lastMotionResult = false;
 
-    private VideoCapture? _capture;
+    private readonly VideoCapture _capture;
 
-    public FrameProcessor(IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient, WorkerProperties options, ILogger<FrameProcessor> logger)
+    public FrameProcessor(VideoCapture videoCapture, IBackgroundSubtractorAdapter subtractor, IObjectDetectionGrpcClient objectDetectionClient, WorkerProperties options, ILogger<FrameProcessor> logger)
     {
-        _videoCaptureFactory = videoCaptureFactory;
-        _backgroundSubtractorFactory = backgroundSubtractorFactory;
-        _objectDetectionClient = objectDetectionClient;
         _logger = logger;
+        _capture = videoCapture;
+        _subtractor = subtractor;
+        _objectDetectionClient = objectDetectionClient;
         _options = options;
-
-        _subtractor = _backgroundSubtractorFactory.Create(type: BackgroundSubtractorType.MOG2);
         _foregroundMask = new Mat();
 
         //Setup motion detection parameters
@@ -51,11 +46,6 @@ public class FrameProcessor : IFrameProcessor
         _downscaledWidth = options.CameraOptions.Resolution.Width / options.MotionDetectionOptions.DownscaleFactor;
         int downscaledArea = _downscaledWidth * _downscaledHeight;
         _motionThreshold = (int)(downscaledArea * options.MotionDetectionOptions.MotionRatio);
-    }
-
-    public virtual async Task InitializeVideoCaptureAsync()
-    {
-        _capture = await _videoCaptureFactory.CreateAsync(_options);
     }
 
     public async Task<byte[]?> QueryAndProcessFrame(int quality = 78, int maxSize = 200 * 1024, CancellationToken cancellationToken = default)
@@ -110,11 +100,7 @@ public class FrameProcessor : IFrameProcessor
 
         // Downscale the frame to reduce the number of pixels to process, improving performance.
         // Uses nearest neighbor interpolation for speed, which is sufficient for motion detection.
-        frame.DownscaleTo(
-            destination: _downscaledFrame,
-            toWidth: _downscaledWidth,
-            toHeight: _downscaledHeight,
-            interpolationMethod: Inter.Nearest);
+        frame.DownscaleTo(destination: _downscaledFrame, toWidth: _downscaledWidth, toHeight: _downscaledHeight, interpolationMethod: Inter.Nearest);
 
         // Apply background subtraction to the downscaled frame.
         // The foregroundMask will contain white pixels where motion is detected.
@@ -137,8 +123,9 @@ public class FrameProcessor : IFrameProcessor
     public void Dispose()
     {
         GC.SuppressFinalize(this);
-        _capture?.Dispose();
-        _subtractor?.Dispose();
-        _foregroundMask?.Dispose();
+        _capture.Dispose();
+        _subtractor.Dispose();
+        _foregroundMask.Dispose();
+        _objectDetectionClient.Dispose();
     }
 }

@@ -4,15 +4,16 @@ namespace CameraFeed.Processor.Camera.Factories;
 
 public interface IFrameProcessorFactory
 {
-    Task<IFrameProcessor> CreateAsync(WorkerProperties options);
+    Task<IFrameProcessor> CreateAsync(WorkerProperties options, BackgroundSubtractorType subtractorType = BackgroundSubtractorType.MOG2);
 }
 
 public class FrameProcessorFactory(IVideoCaptureFactory videoCaptureFactory, IBackgroundSubtractorFactory backgroundSubtractorFactory, IObjectDetectionGrpcClient objectDetectionClient, ILogger<FrameProcessor> logger) : IFrameProcessorFactory
 {
-    public async Task<IFrameProcessor> CreateAsync(WorkerProperties options)
+    public async Task<IFrameProcessor> CreateAsync(WorkerProperties options, BackgroundSubtractorType subtractorType = BackgroundSubtractorType.MOG2)
     {
-        var frameProcessor = new FrameProcessor(videoCaptureFactory, backgroundSubtractorFactory, objectDetectionClient, options, logger);
-        await frameProcessor.InitializeVideoCaptureAsync();
-        return frameProcessor;
+        var videoCapture = await videoCaptureFactory.CreateAsync(options);
+        var subtractor = backgroundSubtractorFactory.Create(subtractorType);
+
+        return new FrameProcessor(videoCapture, subtractor, objectDetectionClient, options, logger);
     }
 }

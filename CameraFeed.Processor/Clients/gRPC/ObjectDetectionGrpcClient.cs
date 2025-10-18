@@ -5,12 +5,12 @@ using Polly.CircuitBreaker;
 
 namespace CameraFeed.Processor.Clients.gRPC;
 
-public interface IObjectDetectionGrpcClient
+public interface IObjectDetectionGrpcClient: IDisposable
 {
     Task<byte[]> DetectObjectsAsync(byte[] imageData, CancellationToken cancellation = default);
 }
 
-public class ObjectDetectionGrpcClient : IObjectDetectionGrpcClient, IDisposable
+public class ObjectDetectionGrpcClient : IObjectDetectionGrpcClient
 {
     private readonly ILogger<ObjectDetectionGrpcClient> _logger;
     private readonly GrpcChannel _channel;
