@@ -1,10 +1,11 @@
-﻿using CameraFeed.Processor.Clients.gRPC;
+﻿using CameraFeed.Processor.Camera.Factories;
+using CameraFeed.Processor.Clients.gRPC;
 using CameraFeed.Processor.Extensions;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
 
-namespace CameraFeed.Processor.Camera.Worker;
+namespace CameraFeed.Processor.Camera;
 
 public interface IFrameProcessor : IDisposable
 {

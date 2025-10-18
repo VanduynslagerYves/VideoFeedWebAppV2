@@ -1,6 +1,6 @@
 ﻿using CameraFeed.Processor.Clients.gRPC;
 
-namespace CameraFeed.Processor.Camera.Worker;
+namespace CameraFeed.Processor.Camera.Factories;
 
 public interface IFrameProcessorFactory
 {

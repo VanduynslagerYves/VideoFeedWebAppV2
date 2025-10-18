@@ -1,6 +1,7 @@
-﻿using CameraFeed.Processor.Clients.SignalR;
+﻿using CameraFeed.Processor.Camera.Factories;
+using CameraFeed.Processor.Clients.SignalR;
 
-namespace CameraFeed.Processor.Camera.Worker;
+namespace CameraFeed.Processor.Camera;
 
 public interface ICameraWorker
 {

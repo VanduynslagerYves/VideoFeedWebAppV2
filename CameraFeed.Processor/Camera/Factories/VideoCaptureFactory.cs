@@ -1,7 +1,7 @@
 ﻿using Emgu.CV;
 using Emgu.CV.CvEnum;
 
-namespace CameraFeed.Processor.Camera.Worker;
+namespace CameraFeed.Processor.Camera.Factories;
 
 public interface IVideoCaptureFactory
 {

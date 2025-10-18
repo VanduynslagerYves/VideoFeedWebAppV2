@@ -1,8 +1,9 @@
 ﻿using AutoMapper;
+using CameraFeed.Processor.Camera.Factories;
 using CameraFeed.Shared.DTOs;
 using System.Collections.Concurrent;
 
-namespace CameraFeed.Processor.Camera.Worker;
+namespace CameraFeed.Processor.Camera;
 
 public interface ICameraWorkerManager
 {

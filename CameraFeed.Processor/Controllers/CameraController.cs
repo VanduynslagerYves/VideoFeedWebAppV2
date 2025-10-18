@@ -1,8 +1,8 @@
 ﻿using CameraFeed.Processor.Repositories;
-using CameraFeed.Processor.Camera.Worker;
 using CameraFeed.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using CameraFeed.Processor.Camera;
 
 namespace CameraFeed.Processor.Controllers;
 

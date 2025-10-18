@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
-using CameraFeed.Processor.Camera.Worker;
+using CameraFeed.Processor.Camera;
+using CameraFeed.Processor.Camera.Factories;
 using CameraFeed.Processor.Repositories;
 
 namespace CameraFeed.Processor.BackgroundServices;

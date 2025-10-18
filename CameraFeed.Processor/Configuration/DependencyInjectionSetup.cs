@@ -1,7 +1,8 @@
 ﻿namespace CameraFeed.Processor.Configuration;
 
 using CameraFeed.Processor.BackgroundServices;
-using CameraFeed.Processor.Camera.Worker;
+using CameraFeed.Processor.Camera;
+using CameraFeed.Processor.Camera.Factories;
 using CameraFeed.Processor.Clients.gRPC;
 using CameraFeed.Processor.Clients.SignalR;
 using CameraFeed.Processor.Repositories;

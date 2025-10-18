@@ -1,4 +1,4 @@
-﻿namespace CameraFeed.Processor.Camera.Worker;
+﻿namespace CameraFeed.Processor.Camera;
 
 public interface IWorkerHandle
 {

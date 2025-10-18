@@ -1,7 +1,7 @@
 ﻿using Emgu.CV;
 using Emgu.CV.BgSegm;
 
-namespace CameraFeed.Processor.Camera.Worker;
+namespace CameraFeed.Processor.Camera.Factories;
 
 public interface IBackgroundSubtractorFactory
 {

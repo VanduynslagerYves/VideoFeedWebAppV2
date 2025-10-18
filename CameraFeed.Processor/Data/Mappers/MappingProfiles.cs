@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using CameraFeed.Processor.Camera.Worker;
+using CameraFeed.Processor.Camera;
 using CameraFeed.Processor.Data.Entities;
 using CameraFeed.Shared.DTOs;
 
