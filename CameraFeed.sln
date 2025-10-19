@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CameraFeed.SocketServer", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tryouts", "Tryouts\Tryouts.csproj", "{DF7D3B3D-C833-49E6-BA4D-223D29045AD5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CameraFeed.Processor.Tests", "CameraFeed.Processor.Tests\CameraFeed.Processor.Tests.csproj", "{3D86DA8E-1761-4787-8E93-64B3E4F79C20}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,6 +39,10 @@ Global
 		{DF7D3B3D-C833-49E6-BA4D-223D29045AD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DF7D3B3D-C833-49E6-BA4D-223D29045AD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DF7D3B3D-C833-49E6-BA4D-223D29045AD5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D86DA8E-1761-4787-8E93-64B3E4F79C20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D86DA8E-1761-4787-8E93-64B3E4F79C20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D86DA8E-1761-4787-8E93-64B3E4F79C20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D86DA8E-1761-4787-8E93-64B3E4F79C20}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
