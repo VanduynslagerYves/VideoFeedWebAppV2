@@ -53,7 +53,7 @@ public class CameraWorker(WorkerProperties options, ICameraSignalRclient signalR
                 }
             }
 
-            await _signalRclient.StopAndDisposeConnectionsAsync(CamName, token);
+            await _signalRclient.StopAndDisposeConnectionsAsync(CamName, token); //TODO: check if this is necesarry, probably not since we pass the token to signalRClient
         }
         catch (OperationCanceledException)
         {
