@@ -43,9 +43,24 @@ public class CameraWorkerHandle(ICameraWorker worker, CancellationTokenSource ct
 
     public override Task StopAsync()
     {
-        Cts.Cancel();
-        Cts.Dispose();
-        RunningTask = null;
+        try
+        {
+            Cts.Cancel();
+            Cts.Dispose();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Ignore if already disposed
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+        finally
+        {
+            RunningTask = null;
+        }
+
         return Task.CompletedTask;
     }
 }
