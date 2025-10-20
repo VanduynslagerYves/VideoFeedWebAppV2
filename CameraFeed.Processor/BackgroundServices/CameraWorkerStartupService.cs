@@ -55,7 +55,7 @@ public class CameraWorkerStartupService(IServiceProvider serviceProvider, ICamer
 
             try
             {
-                int workerId = _workerManager.CreateWorker(options, cancellationToken);
+                int workerId = _workerManager.CreateWorker(options);
                 await _workerManager.StartAsync(workerId);
             }
             catch (Exception ex)

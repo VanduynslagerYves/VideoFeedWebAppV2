@@ -7,7 +7,7 @@ namespace CameraFeed.Processor.Camera;
 
 public interface ICameraWorkerManager
 {
-    int CreateWorker(WorkerProperties options, CancellationToken cancellationToken);
+    int CreateWorker(WorkerProperties options);
     Task StartAsync(int cameraId);
     Task StopAsync(int cameraId);
     Task StopAllAsync();
@@ -17,7 +17,7 @@ public interface ICameraWorkerManager
 
 public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, IMapper mapper, ILogger<CameraWorkerManager> logger) : ICameraWorkerManager
 {
-    private readonly ConcurrentDictionary<int, IWorkerHandle> _workerHandles = new();
+    private readonly ConcurrentDictionary<int, IWorkerHandle> _workersDict = new();
     private readonly ICameraWorkerFactory _cameraWorkerFactory = cameraWorkerFactory;
     private readonly IMapper _mapper = mapper;
 
@@ -25,22 +25,20 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, IMapp
     //and invoke them in the respective methods
     //then subscribe to these events in the CameraWorkerStartupService or any other callers
 
-    public int CreateWorker(WorkerProperties options, CancellationToken cancellationToken)
+    public int CreateWorker(WorkerProperties options)
     {
-        if (_workerHandles.TryGetValue(options.CameraOptions.Id, out var workerHandle)) return workerHandle.Worker.CamId;
+        var camId = options.CameraOptions.Id;
+        if (_workersDict.ContainsKey(camId)) return camId; //Or invoke OnAlreadyExists delegates
 
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var worker = _cameraWorkerFactory.Create(options);
-        workerHandle = new CameraWorkerHandle(worker, cts, null);
+        var workerHandle = _cameraWorkerFactory.Create(options);
+        _workersDict.TryAdd(camId, workerHandle);
 
-        _workerHandles.TryAdd(worker.CamId, workerHandle);
-
-        return worker.CamId;
+        return camId;
     }
 
     public async Task StartAsync(int cameraId)
     {
-        if (!_workerHandles.TryGetValue(cameraId, out var workerHandle)) return; //Or invoke OnNotFound delegates
+        if (!_workersDict.TryGetValue(cameraId, out var workerHandle)) return; //Or invoke OnNotFound delegates
 
         try
         {
@@ -57,7 +55,7 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, IMapp
 
     public async Task StopAsync(int cameraId)
     {
-        if (!_workerHandles.TryRemove(cameraId, out var workerHandle)) return; //Or invoke OnNotFound delegates
+        if (!_workersDict.TryRemove(cameraId, out var workerHandle)) return; //Or invoke OnNotFound delegates
 
         try
         {
@@ -72,7 +70,7 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, IMapp
 
     public async Task StopAllAsync()
     {
-        foreach (var workerHandle in _workerHandles.Values)
+        foreach (var workerHandle in _workersDict.Values)
         {
             await StopAsync(workerHandle.Worker.CamId);
         }
@@ -92,7 +90,7 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, IMapp
 
     private IEnumerable<ICameraWorker> GetWorkers(bool isActive = true)
     {
-        return _workerHandles.Values
+        return _workersDict.Values
             .Where(w => isActive ? w.RunningTask != null : w.RunningTask == null)
             .Select(x => x.Worker);
     }

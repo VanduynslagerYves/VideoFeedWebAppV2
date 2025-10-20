@@ -9,17 +9,17 @@ public interface IWorkerHandle
     Task StopAsync();
 }
 
-public abstract class WorkerHandle(ICameraWorker worker, CancellationTokenSource cts, Task? runningTask) : IWorkerHandle
+public abstract class WorkerHandle(ICameraWorker worker, CancellationTokenSource cts) : IWorkerHandle
 {
     public ICameraWorker Worker { get; } = worker;
     public CancellationTokenSource Cts { get; } = cts;
-    public Task? RunningTask { get; set; } = runningTask;
+    public Task? RunningTask { get; set; }
 
     public abstract Task StartAsync();
     public abstract Task StopAsync();
 }
 
-public class CameraWorkerHandle(ICameraWorker worker, CancellationTokenSource cts, Task? runningTask) : WorkerHandle(worker, cts, runningTask)
+public class CameraWorkerHandle(ICameraWorker worker, CancellationTokenSource cts) : WorkerHandle(worker, cts)
 {
     /// <summary>
     /// Starts the camera worker on a background thread.

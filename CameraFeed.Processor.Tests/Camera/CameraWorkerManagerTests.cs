@@ -49,19 +49,18 @@ public class CameraWorkerManagerTests
         _workerHandleMock.SetupProperty(h => h.RunningTask);
 
         _workerFactoryMock.Setup(f => f.Create(It.IsAny<WorkerProperties>()))
-            .Returns(_cameraWorkerMock.Object);
+            .Returns(_workerHandleMock.Object);
     }
 
     private CameraWorkerManager CreateManager() => new(_workerFactoryMock.Object, _mapperMock.Object, _loggerMock.Object);
 
     [Fact]
-    public void Create_ShouldAddAndWorkerHandle()
+    public void Create_ShouldAddWorkerHandle()
     {
         var manager = CreateManager();
-        var cts = new CancellationTokenSource();
 
         // Act: create the handle (no return value)
-        manager.CreateWorker(_workerProps, cts.Token);
+        manager.CreateWorker(_workerProps);
         var workerHandles = GetWorkerHandles(manager);
 
         // Assert: handle exists and contains the mock worker
@@ -70,7 +69,7 @@ public class CameraWorkerManagerTests
         Assert.Equal(_cameraWorkerMock.Object, handle.Worker);
 
         // Act: call Create again with the same camera ID
-        manager.CreateWorker(_workerProps, cts.Token);
+        manager.CreateWorker(_workerProps);
 
         // Assert: the handle instance is the same
         Assert.True(workerHandles.TryGetValue(_workerProps.CameraOptions.Id, out var handle2));
@@ -78,7 +77,7 @@ public class CameraWorkerManagerTests
     }
 
     [Fact]
-    public async Task StartAsync_ShouldCallStartAndLog()
+    public async Task StartAsync_ShouldCallStart()
     {
         var manager = CreateManager();
         var workerHandles = GetWorkerHandles(manager);
@@ -93,7 +92,7 @@ public class CameraWorkerManagerTests
     }
 
     [Fact]
-    public async Task StopAsync_ShouldRemoveAndStopWorker()
+    public async Task StopAsync_ShouldStopWorker()
     {
         var manager = CreateManager();
         var workerHandles = GetWorkerHandles(manager);
@@ -127,11 +126,9 @@ public class CameraWorkerManagerTests
     public void GetWorkerDtos_ShouldReturnMappedDtos()
     {
         var manager = CreateManager();
-        var cts = new CancellationTokenSource();
 
         // Add the worker handle
-        manager.CreateWorker(_workerProps, cts.Token);
-
+        manager.CreateWorker(_workerProps);
         var workerHandles = GetWorkerHandles(manager);
 
         // Mark the worker as active
@@ -148,14 +145,12 @@ public class CameraWorkerManagerTests
     }
 
     [Fact]
-    public void GetWorkerIds_ShouldReturnIds()
+    public void GetWorkerIds_ShouldReturnIds_WhenActive()
     {
         var manager = CreateManager();
-        var cts = new CancellationTokenSource();
 
         // Add the worker handle
-        manager.CreateWorker(_workerProps, cts.Token);
-
+        manager.CreateWorker(_workerProps);
         var workerHandles = GetWorkerHandles(manager);
 
         // Mark the worker as active
@@ -172,11 +167,9 @@ public class CameraWorkerManagerTests
     public void GetWorkerIds_ShouldReturnIds_WhenInactive()
     {
         var manager = CreateManager();
-        var cts = new CancellationTokenSource();
 
         // Add the worker handle
-        manager.CreateWorker(_workerProps, cts.Token);
-
+        manager.CreateWorker(_workerProps);
         var workerHandles = GetWorkerHandles(manager);
 
         // Get and mark the worker as inactive
@@ -189,32 +182,11 @@ public class CameraWorkerManagerTests
         Assert.Equal(1, ids[0]);
     }
 
-    [Fact]
-    public void GetWorkerIds_ShouldReturnIds_WhenActive()
-    {
-        var manager = CreateManager();
-        var cts = new CancellationTokenSource();
-
-        // Add the worker handle
-        manager.CreateWorker(_workerProps, cts.Token);
-
-        var workerHandles = GetWorkerHandles(manager);
-
-        // Get and mark the worker as active
-        Assert.True(workerHandles.TryGetValue(_workerProps.CameraOptions.Id, out var handle));
-        handle.RunningTask = Task.CompletedTask;
-
-        var ids = manager.GetWorkerIds(isActive: true).ToList();
-
-        Assert.Single(ids);
-        Assert.Equal(1, ids[0]);
-    }
-
     private static ConcurrentDictionary<int, IWorkerHandle> GetWorkerHandles(CameraWorkerManager manager)
     {
         // Access the private _workerHandles dictionary
         var workerHandlesField = typeof(CameraWorkerManager)
-            .GetField("_workerHandles", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            .GetField("_workersDict", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         return (ConcurrentDictionary<int, IWorkerHandle>)workerHandlesField!.GetValue(manager)!;
     }
 }
