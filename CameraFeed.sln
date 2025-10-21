@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CameraFeed.SocketServer", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tryouts", "Tryouts\Tryouts.csproj", "{DF7D3B3D-C833-49E6-BA4D-223D29045AD5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CameraFeed.Processor.Tests", "CameraFeed.Processor.Tests\CameraFeed.Processor.Tests.csproj", "{3D86DA8E-1761-4787-8E93-64B3E4F79C20}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CameraFeed.Tests", "CameraFeed.Tests\CameraFeed.Tests.csproj", "{3D86DA8E-1761-4787-8E93-64B3E4F79C20}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -30,9 +30,9 @@ public class FrameProcessor : IFrameProcessor
     private int _frameCounter = 0;
     private bool _lastMotionResult = false;
 
-    private readonly VideoCapture _capture;
+    private readonly IVideoCaptureAdapter _capture;
 
-    public FrameProcessor(VideoCapture videoCapture, IBackgroundSubtractorAdapter subtractor, IObjectDetectionGrpcClient objectDetectionClient, WorkerProperties options, ILogger<FrameProcessor> logger)
+    public FrameProcessor(IVideoCaptureAdapter videoCapture, IBackgroundSubtractorAdapter subtractor, IObjectDetectionGrpcClient objectDetectionClient, WorkerProperties options, ILogger<FrameProcessor> logger)
     {
         _logger = logger;
         _capture = videoCapture;

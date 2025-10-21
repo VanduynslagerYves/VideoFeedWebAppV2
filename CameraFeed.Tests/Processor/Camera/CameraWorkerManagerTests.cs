@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using System.Collections.Concurrent;
 
-namespace CameraFeed.Processor.Tests.Camera;
+namespace CameraFeed.Tests.Processor.Camera;
 
 public class CameraWorkerManagerTests
 {
@@ -16,27 +16,6 @@ public class CameraWorkerManagerTests
 
     private readonly Mock<IWorkerHandle> _workerHandleMock = new();
     private readonly Mock<ICameraWorker> _cameraWorkerMock = new();
-
-    private readonly WorkerProperties _workerProps = new()
-    {
-        Mode = InferenceMode.Continuous,
-        CameraOptions = new CameraProperties
-        {
-            Id = 1,
-            Name = "TestCam",
-            Resolution = new CameraResolutionProperties
-            {
-                Width = 640,
-                Height = 480
-            },
-            Framerate = 30
-        },
-        MotionDetectionOptions = new MotionDetectionProperties
-        {
-            DownscaleFactor = 2,
-            MotionRatio = 0.05
-        }
-    };
 
     public CameraWorkerManagerTests()
     {
@@ -52,27 +31,26 @@ public class CameraWorkerManagerTests
             .Returns(_workerHandleMock.Object);
     }
 
-    private CameraWorkerManager CreateManager() => new(_workerFactoryMock.Object, _mapperMock.Object, _loggerMock.Object);
-
     [Fact]
     public void Create_ShouldAddWorkerHandle()
     {
         var manager = CreateManager();
+        var options = GetWorkerProperties();
 
         // Act: create the handle (no return value)
-        manager.CreateWorker(_workerProps);
+        manager.CreateWorker(options);
         var workerHandles = GetWorkerHandles(manager);
 
         // Assert: handle exists and contains the mock worker
-        Assert.True(workerHandles.TryGetValue(_workerProps.CameraOptions.Id, out var handle));
+        Assert.True(workerHandles.TryGetValue(options.CameraOptions.Id, out var handle));
         Assert.NotNull(handle);
         Assert.Equal(_cameraWorkerMock.Object, handle.Worker);
 
         // Act: call Create again with the same camera ID
-        manager.CreateWorker(_workerProps);
+        manager.CreateWorker(options);
 
         // Assert: the handle instance is the same
-        Assert.True(workerHandles.TryGetValue(_workerProps.CameraOptions.Id, out var handle2));
+        Assert.True(workerHandles.TryGetValue(options.CameraOptions.Id, out var handle2));
         Assert.Same(handle, handle2);
     }
 
@@ -126,13 +104,14 @@ public class CameraWorkerManagerTests
     public void GetWorkerDtos_ShouldReturnMappedDtos()
     {
         var manager = CreateManager();
+        var options = GetWorkerProperties();
 
         // Add the worker handle
-        manager.CreateWorker(_workerProps);
+        manager.CreateWorker(options);
         var workerHandles = GetWorkerHandles(manager);
 
         // Mark the worker as active
-        Assert.True(workerHandles.TryGetValue(_workerProps.CameraOptions.Id, out var handle));
+        Assert.True(workerHandles.TryGetValue(options.CameraOptions.Id, out var handle));
         handle.RunningTask = Task.CompletedTask;
 
         var dto = new CameraInfoDTO { Id = 1, Name = "TestCam", Width = 640, Height = 480 };
@@ -148,13 +127,14 @@ public class CameraWorkerManagerTests
     public void GetWorkerIds_ShouldReturnIds_WhenActive()
     {
         var manager = CreateManager();
+        var options = GetWorkerProperties();
 
         // Add the worker handle
-        manager.CreateWorker(_workerProps);
+        manager.CreateWorker(options);
         var workerHandles = GetWorkerHandles(manager);
 
         // Mark the worker as active
-        Assert.True(workerHandles.TryGetValue(_workerProps.CameraOptions.Id, out var handle));
+        Assert.True(workerHandles.TryGetValue(options.CameraOptions.Id, out var handle));
         handle.RunningTask = Task.CompletedTask;
 
         var ids = manager.GetWorkerIds().ToList();
@@ -167,13 +147,14 @@ public class CameraWorkerManagerTests
     public void GetWorkerIds_ShouldReturnIds_WhenInactive()
     {
         var manager = CreateManager();
+        var options = GetWorkerProperties();
 
         // Add the worker handle
-        manager.CreateWorker(_workerProps);
+        manager.CreateWorker(options);
         var workerHandles = GetWorkerHandles(manager);
 
         // Get and mark the worker as inactive
-        Assert.True(workerHandles.TryGetValue(_workerProps.CameraOptions.Id, out var handle));
+        Assert.True(workerHandles.TryGetValue(options.CameraOptions.Id, out var handle));
         handle.RunningTask = null;
 
         var ids = manager.GetWorkerIds(isActive: false).ToList();
@@ -182,6 +163,9 @@ public class CameraWorkerManagerTests
         Assert.Equal(1, ids[0]);
     }
 
+    #region Helpers
+    private CameraWorkerManager CreateManager() => new(_workerFactoryMock.Object, _mapperMock.Object, _loggerMock.Object);
+
     private static ConcurrentDictionary<int, IWorkerHandle> GetWorkerHandles(CameraWorkerManager manager)
     {
         // Access the private _workerHandles dictionary
@@ -189,4 +173,22 @@ public class CameraWorkerManagerTests
             .GetField("_workersDict", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         return (ConcurrentDictionary<int, IWorkerHandle>)workerHandlesField!.GetValue(manager)!;
     }
+
+    private static WorkerProperties GetWorkerProperties(InferenceMode mode = InferenceMode.Continuous) => new()
+    {
+        Mode = mode,
+        CameraOptions = new CameraProperties
+        {
+            Id = 1,
+            Name = "TestCam",
+            Resolution = new CameraResolutionProperties { Width = 640, Height = 480 },
+            Framerate = 30
+        },
+        MotionDetectionOptions = new MotionDetectionProperties
+        {
+            DownscaleFactor = 2,
+            MotionRatio = 0.05
+        }
+    };
+    #endregion
 }

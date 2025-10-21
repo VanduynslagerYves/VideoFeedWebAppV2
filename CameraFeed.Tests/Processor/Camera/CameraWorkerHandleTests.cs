@@ -1,7 +1,7 @@
 using CameraFeed.Processor.Camera;
 using Moq;
 
-namespace CameraFeed.Processor.Tests.Camera;
+namespace CameraFeed.Tests.Processor.Camera;
 
 public class CameraWorkerHandleTests
 {

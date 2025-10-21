@@ -1,16 +1,17 @@
-﻿using Emgu.CV;
+﻿using CameraFeed.Processor.Camera.Adapter;
+using Emgu.CV;
 using Emgu.CV.CvEnum;
 
 namespace CameraFeed.Processor.Camera.Factories;
 
 public interface IVideoCaptureFactory
 {
-    Task<VideoCapture> CreateAsync(WorkerProperties options);
+    Task<IVideoCaptureAdapter> CreateAsync(WorkerProperties options);
 }
 
 public class VideoCaptureFactory : IVideoCaptureFactory
 {
-    public Task<VideoCapture> CreateAsync(WorkerProperties options)
+    public Task<IVideoCaptureAdapter> CreateAsync(WorkerProperties options)
     {
         // Initialize VideoCapture with specified camera ID and settings
         // Note: VideoCapture initialization can be blocking, so we offload it to a thread pool thread
@@ -26,7 +27,7 @@ public class VideoCaptureFactory : IVideoCaptureFactory
             videoCapture.Set(CapProp.Fps, options.CameraOptions.Framerate);
             videoCapture.Set(CapProp.FourCC, VideoWriter.Fourcc('M', 'J', 'P', 'G'));
 
-            return videoCapture;
+            return new VideoCaptureAdapter(videoCapture) as IVideoCaptureAdapter;
         });
     }
 }

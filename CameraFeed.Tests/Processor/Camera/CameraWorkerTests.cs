@@ -4,27 +4,10 @@ using CameraFeed.Processor.Camera;
 using CameraFeed.Processor.Camera.Factories;
 using CameraFeed.Processor.Clients.SignalR;
 
-namespace CameraFeed.Processor.Tests.Camera;
+namespace CameraFeed.Tests.Processor.Camera;
 
 public class CameraWorkerTests
 {
-    private static WorkerProperties GetWorkerProperties() => new()
-    {
-        Mode = InferenceMode.Continuous,
-        CameraOptions = new CameraProperties
-        {
-            Id = 1,
-            Name = "TestCam",
-            Resolution = new CameraResolutionProperties { Width = 640, Height = 480 },
-            Framerate = 30
-        },
-        MotionDetectionOptions = new MotionDetectionProperties
-        {
-            DownscaleFactor = 2,
-            MotionRatio = 0.1
-        }
-    };
-
     [Fact]
     public async Task RunAsync_SendsFrameToLocalAndRemote_WhenRemoteStreamingEnabled()
     {
@@ -124,4 +107,23 @@ public class CameraWorkerTests
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.AtLeastOnce());
     }
+
+    #region Helpers
+    private static WorkerProperties GetWorkerProperties(InferenceMode mode = InferenceMode.Continuous) => new()
+    {
+        Mode = mode,
+        CameraOptions = new CameraProperties
+        {
+            Id = 1,
+            Name = "TestCam",
+            Resolution = new CameraResolutionProperties { Width = 640, Height = 480 },
+            Framerate = 30
+        },
+        MotionDetectionOptions = new MotionDetectionProperties
+        {
+            DownscaleFactor = 2,
+            MotionRatio = 0.05
+        }
+    };
+    #endregion
 }
