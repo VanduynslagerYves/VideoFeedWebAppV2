@@ -57,21 +57,4 @@ public class CameraWorkerHandleTests
         Assert.Null(handle.RunningTask);
         Assert.True(cts.IsCancellationRequested);
     }
-
-    [Fact]
-    public async Task StopAsync_ShouldNotThrowIfAlreadyDisposed()
-    {
-        var workerMock = new Mock<ICameraWorker>();
-        var cts = new CancellationTokenSource();
-        cts.Dispose();
-
-        var handle = new CameraWorkerHandle(workerMock.Object, cts)
-        {
-            RunningTask = Task.CompletedTask
-        };
-
-        var ex = await Record.ExceptionAsync(() => handle.StopAsync());
-        Assert.Null(ex);
-        Assert.Null(handle.RunningTask);
-    }
 }

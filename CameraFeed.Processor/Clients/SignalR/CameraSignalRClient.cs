@@ -130,7 +130,6 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
             }
         }
 
-        //TODO: Split in HandleCreateLocalConnectionAsync and HandleCreateRemoteConnectionAsync
         private async Task HandleCreateConnectionsAsync(CancellationToken token)
         {
             await HandleStopAndDisposeAsync(token);
@@ -192,8 +191,7 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
             }
             catch (OperationCanceledException)
             {
-                _logger.LogInformation("{HubType} HubConnection initialization cancelled for {camName}", hubType, _camName);
-                throw;
+                _logger.LogInformation("{HubType} HubConnection initialization was cancelled for {camName} due to application shutdown or service stop.", hubType, _camName);
             }
             catch (Exception ex)
             {
@@ -210,6 +208,10 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
                     await _localHubConnection.InvokeAsync("SendMessage", frameData, _camName, token);
                 }
             }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Sending frame to local hub for camera {camName} was cancelled due to application shutdown or service stop.", _camName);
+            }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to send frame to local hub for camera {camName}: {Message}", _camName, ex.Message);
@@ -225,7 +227,11 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
                     await _remoteHubConnection.InvokeAsync("SendMessage", frameData, _camName, token);
                 }
             }
-            catch(Exception ex)
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Sending frame to remote hub for camera {camName} was cancelled due to application shutdown or service stop.", _camName);
+            }
+            catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to send frame to remote hub for camera {camName}: {Message}", _camName, ex.Message);
             }
@@ -233,7 +239,7 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
 
         private async Task HandleStopAndDisposeAsync(CancellationToken token)
         {
-            if (_localHubConnection != null)
+            if (_localHubConnection != null && _localHubConnection.State == HubConnectionState.Connected)
             {
                 try
                 {
@@ -251,7 +257,7 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
                 }
             }
 
-            if (_remoteHubConnection != null)
+            if (_remoteHubConnection != null && _remoteHubConnection.State == HubConnectionState.Connected)
             {
                 try
                 {

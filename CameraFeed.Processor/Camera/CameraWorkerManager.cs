@@ -7,7 +7,7 @@ namespace CameraFeed.Processor.Camera;
 
 public interface ICameraWorkerManager
 {
-    int CreateWorker(WorkerProperties options);
+    Task<int> CreateWorkerAsync(WorkerProperties options);
     Task StartAsync(int cameraId);
     Task StopAsync(int cameraId);
     Task StopAllAsync();
@@ -25,12 +25,12 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, IMapp
     //and invoke them in the respective methods
     //then subscribe to these events in the CameraWorkerStartupService or any other callers
 
-    public int CreateWorker(WorkerProperties options)
+    public async Task<int> CreateWorkerAsync(WorkerProperties options)
     {
         var camId = options.CameraOptions.Id;
         if (_workersDict.ContainsKey(camId)) return camId; //Or invoke OnAlreadyExists delegates
 
-        var workerHandle = _cameraWorkerFactory.Create(options);
+        var workerHandle = await _cameraWorkerFactory.CreateAsync(options);
         _workersDict.TryAdd(camId, workerHandle);
 
         return camId;
@@ -39,33 +39,13 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, IMapp
     public async Task StartAsync(int cameraId)
     {
         if (!_workersDict.TryGetValue(cameraId, out var workerHandle)) return; //Or invoke OnNotFound delegates
-
-        try
-        {
-            await workerHandle.StartAsync();
-            logger.LogInformation("Worker for {camName} has started.", workerHandle.Worker.CamName);
-            //Invoke here any OnStart delegates if implemented
-        }
-        catch (Exception ex)
-        {
-            //Invoke here any OnError delegates if implemented
-            logger.LogError(ex, "Worker for {camName} failed to start.", workerHandle.Worker.CamName);
-        }
+        await workerHandle.StartAsync();
     }
 
     public async Task StopAsync(int cameraId)
     {
         if (!_workersDict.TryRemove(cameraId, out var workerHandle)) return; //Or invoke OnNotFound delegates
-
-        try
-        {
-            await workerHandle.StopAsync();
-            logger.LogInformation("Worker for {camName} is stopped.", workerHandle.Worker.CamName);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Worker for {camName} failed to stop.", workerHandle.Worker.CamName);
-        }
+        await workerHandle.StopAsync();
     }
 
     public async Task StopAllAsync()

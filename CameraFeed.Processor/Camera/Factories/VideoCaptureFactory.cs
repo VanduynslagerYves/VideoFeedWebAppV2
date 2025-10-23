@@ -4,16 +4,17 @@ using Emgu.CV.CvEnum;
 
 namespace CameraFeed.Processor.Camera.Factories;
 
+[Obsolete("Use IVideoCaptureBuilder instead")]
 public interface IVideoCaptureFactory
 {
     Task<IVideoCaptureAdapter> CreateAsync(WorkerProperties options);
 }
 
+[Obsolete("Use VideoCaptureBuilder instead")]
 public class VideoCaptureFactory : IVideoCaptureFactory
 {
     public Task<IVideoCaptureAdapter> CreateAsync(WorkerProperties options)
     {
-        // Initialize VideoCapture with specified camera ID and settings
         // Note: VideoCapture initialization can be blocking, so we offload it to a thread pool thread
         return Task.Run(() =>
         {

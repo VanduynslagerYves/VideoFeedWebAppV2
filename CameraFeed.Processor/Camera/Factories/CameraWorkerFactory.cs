@@ -4,14 +4,15 @@ namespace CameraFeed.Processor.Camera.Factories;
 
 public interface ICameraWorkerFactory
 {
-    IWorkerHandle Create(WorkerProperties options);
+    Task<IWorkerHandle> CreateAsync(WorkerProperties options);
 }
 
 public class CameraWorkerFactory(ICameraSignalRclient signalRclient, IFrameProcessorFactory frameProcessorFactory, ILogger<CameraWorker> logger) : ICameraWorkerFactory
 {
-    public IWorkerHandle Create(WorkerProperties options)
+    public async Task<IWorkerHandle> CreateAsync(WorkerProperties options)
     {
-        var worker =  new CameraWorker(options, signalRclient, frameProcessorFactory, logger);
+        var frameProcessor = await frameProcessorFactory.CreateAsync(options);
+        var worker =  new CameraWorker(options, signalRclient, frameProcessor, logger);
         var cts = new CancellationTokenSource();
 
         return new CameraWorkerHandle(worker, cts);

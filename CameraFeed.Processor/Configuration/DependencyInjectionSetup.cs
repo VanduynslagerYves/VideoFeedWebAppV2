@@ -23,7 +23,6 @@ public static class DependencyInjectionSetup
         services.AddSingleton<ICameraWorkerFactory, CameraWorkerFactory>();
         services.AddSingleton<IHubConnectionFactory, HubConnectionFactory>();
         services.AddSingleton<IFrameProcessorFactory, FrameProcessorFactory>();
-        services.AddSingleton<IVideoCaptureFactory, VideoCaptureFactory>();
         services.AddSingleton<IBackgroundSubtractorFactory, BackgroundSubtractorFactory>();
 
         //Managers

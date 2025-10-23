@@ -35,27 +35,15 @@ public class CameraWorkerStartupService(IServiceProvider serviceProvider, ICamer
         var enabledWorkers = await workerRepository.GetEnabledWorkersAsync();
         if (enabledWorkers.Count == 0) return;
 
-        // Note:
-        // Using ParallelOptions with MaxDegreeOfParallelism limits the number of concurrent operations.
-        // This helps prevent resource exhaustion and balances system load, especially when initializing many workers.
-        var parallelOptions = new ParallelOptions
-        {
-            MaxDegreeOfParallelism = 4,
-            CancellationToken = cancellationToken
-        };
-
-        // Note:
-        // Parallel.ForEachAsync allows multiple workers to be initialized concurrently.
-        // On multi-core systems, this may also result in parallel execution.
-        // This significantly improves startup performance compared to sequential looping,
-        // as it reduces total initialization time and makes better use of available system resources.
-        await Parallel.ForEachAsync(enabledWorkers, parallelOptions, async (workerRecord, ct) =>
+        // Initialize and start each enabled worker
+        // Using Task.WhenAll to run startups in parallel
+        var startupTasks = enabledWorkers.Select(async workerRecord =>
         {
             var options = _mapper.Map<WorkerProperties>(workerRecord);
 
             try
             {
-                int workerId = _workerManager.CreateWorker(options);
+                int workerId = await _workerManager.CreateWorkerAsync(options);
                 await _workerManager.StartAsync(workerId);
             }
             catch (Exception ex)
@@ -63,6 +51,8 @@ public class CameraWorkerStartupService(IServiceProvider serviceProvider, ICamer
                 _logger.LogWarning(ex, "Worker {CameraId} failed to initialize and will not be started by CameraWorkerService.", workerRecord.CameraId);
             }
         });
+
+        await Task.WhenAll(startupTasks);
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)

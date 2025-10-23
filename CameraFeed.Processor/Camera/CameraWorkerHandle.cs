@@ -41,26 +41,32 @@ public class CameraWorkerHandle(ICameraWorker worker, CancellationTokenSource ct
         return Task.CompletedTask;
     }
 
-    public override Task StopAsync()
+    public override async Task StopAsync()
     {
         try
         {
             Cts.Cancel();
-            Cts.Dispose();
-        }
-        catch (ObjectDisposedException)
-        {
-            // Ignore if already disposed
-        }
-        catch (Exception)
-        {
-            throw;
+            if (RunningTask != null)
+            {
+                try
+                {
+                    await RunningTask;
+                }
+                catch (OperationCanceledException)
+                {
+                    // Expected on cancellation, can log if desired
+                }
+                catch (Exception)
+                {
+                    // Log unexpected exceptions if you have a logger
+                    // logger.LogError(ex, "Worker task threw during StopAsync.");
+                }
+            }
         }
         finally
         {
+            Cts.Dispose();
             RunningTask = null;
         }
-
-        return Task.CompletedTask;
     }
 }

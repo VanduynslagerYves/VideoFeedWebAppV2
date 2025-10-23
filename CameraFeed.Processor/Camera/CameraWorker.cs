@@ -1,5 +1,4 @@
-﻿using CameraFeed.Processor.Camera.Factories;
-using CameraFeed.Processor.Clients.SignalR;
+﻿using CameraFeed.Processor.Clients.SignalR;
 
 namespace CameraFeed.Processor.Camera;
 
@@ -12,10 +11,8 @@ public interface ICameraWorker
     int CamHeight { get; }
 }
 
-public abstract class CameraWorkerBase(WorkerProperties options, ICameraSignalRclient cameraSignalRClient, IFrameProcessorFactory frameProcessorFactory) : ICameraWorker
+public abstract class CameraWorkerBase(WorkerProperties options) : ICameraWorker
 {
-    protected readonly ICameraSignalRclient _signalRclient = cameraSignalRClient;
-    protected readonly IFrameProcessorFactory _frameProcessorFactory = frameProcessorFactory;
     protected readonly WorkerProperties _options = options;
 
     public int CamId { get; } = options.CameraOptions.Id;
@@ -26,34 +23,32 @@ public abstract class CameraWorkerBase(WorkerProperties options, ICameraSignalRc
     public abstract Task RunAsync(CancellationToken token);
 }
 
-public class CameraWorker(WorkerProperties options, ICameraSignalRclient signalRclient, IFrameProcessorFactory frameProcessorFactory, ILogger<CameraWorker> logger) : CameraWorkerBase(options, signalRclient, frameProcessorFactory)
+public class CameraWorker(WorkerProperties options, ICameraSignalRclient signalRclient, IFrameProcessor frameProcessor, ILogger<CameraWorker> logger) : CameraWorkerBase(options)
 {
     private readonly ILogger<CameraWorker> _logger = logger;
 
     public override async Task RunAsync(CancellationToken token)
     {
+        _logger.LogInformation("Worker for {camName} has started.", CamName);
+
         try
         {
             //One SignalRclient per local and remote connection
             // if not connected, create and start connection
-            //not injected, created per run, Create can stay, just need a Start method (StartAndJoinAsync)
-            await _signalRclient.CreateConnectionsAsync(CamName, token);
-
-            using var frameProcessor = await _frameProcessorFactory.CreateAsync(_options);
+            //not injected, created per run
+            await signalRclient.CreateConnectionsAsync(CamName, token);
 
             while (!token.IsCancellationRequested)
             {
                 var imageData = await frameProcessor.QueryAndProcessFrame(cancellationToken: token);
 
-                var remoteStreamingEnabled = _signalRclient.IsRemoteStreamingEnabled(CamName);
-                await _signalRclient.SendFrameToLocalAsync(imageData, CamName, token);
+                var remoteStreamingEnabled = signalRclient.IsRemoteStreamingEnabled(CamName);
+                await signalRclient.SendFrameToLocalAsync(imageData, CamName, token);
                 if (remoteStreamingEnabled)
                 {
-                    await _signalRclient.SendFrameToRemoteAsync(imageData, CamName, token);
+                    await signalRclient.SendFrameToRemoteAsync(imageData, CamName, token);
                 }
             }
-
-            await _signalRclient.StopAndDisposeConnectionsAsync(CamName, token); //TODO: check if this is necesarry, probably not since we pass the token to signalRClient
         }
         catch (OperationCanceledException)
         {
@@ -65,7 +60,9 @@ public class CameraWorker(WorkerProperties options, ICameraSignalRclient signalR
         }
         finally
         {
-            _logger.LogInformation("CameraWorker for camera {cameraId} has stopped.", CamId);
+            await signalRclient.StopAndDisposeConnectionsAsync(CamName, token); //TODO: check if this is necesarry, probably not since we pass the token to signalRClient
+            frameProcessor.Dispose();
+            _logger.LogInformation("Worker for {camName} is stopped.", CamName);
         }
     }
 }

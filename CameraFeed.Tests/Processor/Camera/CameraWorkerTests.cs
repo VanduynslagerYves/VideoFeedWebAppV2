@@ -14,7 +14,6 @@ public class CameraWorkerTests
         var tokenSource = new CancellationTokenSource();
         var mockSignalR = new Mock<ICameraSignalRclient>();
         var mockFrameProcessor = new Mock<IFrameProcessor>();
-        var mockFactory = new Mock<IFrameProcessorFactory>();
         var mockLogger = new Mock<ILogger<CameraWorker>>();
 
         mockSignalR.Setup(x => x.CreateConnectionsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -31,10 +30,7 @@ public class CameraWorkerTests
             .ReturnsAsync([1, 2, 3])
             .ThrowsAsync(new OperationCanceledException());
 
-        mockFactory.Setup(x => x.CreateAsync(It.IsAny<WorkerProperties>(), It.IsAny<BackgroundSubtractorType>()))
-            .ReturnsAsync(mockFrameProcessor.Object);
-
-        var worker = new CameraWorker(GetWorkerProperties(), mockSignalR.Object, mockFactory.Object, mockLogger.Object);
+        var worker = new CameraWorker(GetWorkerProperties(), mockSignalR.Object, mockFrameProcessor.Object, mockLogger.Object);
 
         await worker.RunAsync(tokenSource.Token);
 
@@ -48,7 +44,6 @@ public class CameraWorkerTests
         var tokenSource = new CancellationTokenSource();
         var mockSignalR = new Mock<ICameraSignalRclient>();
         var mockFrameProcessor = new Mock<IFrameProcessor>();
-        var mockFactory = new Mock<IFrameProcessorFactory>();
         var mockLogger = new Mock<ILogger<CameraWorker>>();
 
         mockSignalR.Setup(x => x.CreateConnectionsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -62,10 +57,7 @@ public class CameraWorkerTests
         mockFrameProcessor.Setup(x => x.QueryAndProcessFrame(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
 
-        mockFactory.Setup(x => x.CreateAsync(It.IsAny<WorkerProperties>(), It.IsAny<BackgroundSubtractorType>()))
-            .ReturnsAsync(mockFrameProcessor.Object);
-
-        var worker = new CameraWorker(GetWorkerProperties(), mockSignalR.Object, mockFactory.Object, mockLogger.Object);
+        var worker = new CameraWorker(GetWorkerProperties(), mockSignalR.Object, mockFrameProcessor.Object, mockLogger.Object);
 
         await worker.RunAsync(tokenSource.Token);
 
@@ -85,16 +77,12 @@ public class CameraWorkerTests
         var tokenSource = new CancellationTokenSource();
         var mockSignalR = new Mock<ICameraSignalRclient>();
         var mockFrameProcessor = new Mock<IFrameProcessor>();
-        var mockFactory = new Mock<IFrameProcessorFactory>();
         var mockLogger = new Mock<ILogger<CameraWorker>>();
 
         mockSignalR.Setup(x => x.CreateConnectionsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Test error"));
 
-        mockFactory.Setup(x => x.CreateAsync(It.IsAny<WorkerProperties>(), It.IsAny<BackgroundSubtractorType>()))
-            .ReturnsAsync(mockFrameProcessor.Object);
-
-        var worker = new CameraWorker(GetWorkerProperties(), mockSignalR.Object, mockFactory.Object, mockLogger.Object);
+        var worker = new CameraWorker(GetWorkerProperties(), mockSignalR.Object, mockFrameProcessor.Object, mockLogger.Object);
 
         await worker.RunAsync(tokenSource.Token);
 

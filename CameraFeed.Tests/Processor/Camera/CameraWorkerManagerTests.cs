@@ -27,18 +27,18 @@ public class CameraWorkerManagerTests
         _workerHandleMock.SetupGet(h => h.Worker).Returns(_cameraWorkerMock.Object);
         _workerHandleMock.SetupProperty(h => h.RunningTask);
 
-        _workerFactoryMock.Setup(f => f.Create(It.IsAny<WorkerProperties>()))
-            .Returns(_workerHandleMock.Object);
+        _workerFactoryMock.Setup(f => f.CreateAsync(It.IsAny<WorkerProperties>()))
+            .ReturnsAsync(_workerHandleMock.Object);
     }
 
     [Fact]
-    public void Create_ShouldAddWorkerHandle()
+    public async Task Create_ShouldAddWorkerHandle()
     {
         var manager = CreateManager();
         var options = GetWorkerProperties();
 
         // Act: create the handle (no return value)
-        manager.CreateWorker(options);
+        await manager.CreateWorkerAsync(options);
         var workerHandles = GetWorkerHandles(manager);
 
         // Assert: handle exists and contains the mock worker
@@ -47,7 +47,7 @@ public class CameraWorkerManagerTests
         Assert.Equal(_cameraWorkerMock.Object, handle.Worker);
 
         // Act: call Create again with the same camera ID
-        manager.CreateWorker(options);
+        await manager.CreateWorkerAsync(options);
 
         // Assert: the handle instance is the same
         Assert.True(workerHandles.TryGetValue(options.CameraOptions.Id, out var handle2));
@@ -101,13 +101,13 @@ public class CameraWorkerManagerTests
     }
 
     [Fact]
-    public void GetWorkerDtos_ShouldReturnMappedDtos()
+    public async Task GetWorkerDtos_ShouldReturnMappedDtos()
     {
         var manager = CreateManager();
         var options = GetWorkerProperties();
 
         // Add the worker handle
-        manager.CreateWorker(options);
+        await manager.CreateWorkerAsync(options);
         var workerHandles = GetWorkerHandles(manager);
 
         // Mark the worker as active
@@ -124,13 +124,13 @@ public class CameraWorkerManagerTests
     }
 
     [Fact]
-    public void GetWorkerIds_ShouldReturnIds_WhenActive()
+    public async Task GetWorkerIds_ShouldReturnIds_WhenActive()
     {
         var manager = CreateManager();
         var options = GetWorkerProperties();
 
         // Add the worker handle
-        manager.CreateWorker(options);
+        await manager.CreateWorkerAsync(options);
         var workerHandles = GetWorkerHandles(manager);
 
         // Mark the worker as active
@@ -144,13 +144,13 @@ public class CameraWorkerManagerTests
     }
 
     [Fact]
-    public void GetWorkerIds_ShouldReturnIds_WhenInactive()
+    public async Task GetWorkerIds_ShouldReturnIds_WhenInactive()
     {
         var manager = CreateManager();
         var options = GetWorkerProperties();
 
         // Add the worker handle
-        manager.CreateWorker(options);
+        await manager.CreateWorkerAsync(options);
         var workerHandles = GetWorkerHandles(manager);
 
         // Get and mark the worker as inactive
