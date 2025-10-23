@@ -1,7 +1,7 @@
 using AutoMapper;
 using CameraFeed.Processor.Camera;
 using CameraFeed.Processor.Camera.Factories;
-using CameraFeed.Shared.DTOs;
+using CameraFeed.Processor.DTOs;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System.Collections.Concurrent;

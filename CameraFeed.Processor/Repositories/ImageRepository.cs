@@ -9,7 +9,7 @@ public interface IImageRepository
     //Task<List<ImageRecord>> GetByCameraIdAsync(int cameraId);
 }
 
-public class ImageRepository(CamDbContext context) : IImageRepository
+public class ImageRepository(/*CamDbContext context*/) : IImageRepository
 {
     //public Task AddAsync(ImageRecord image)
     //{

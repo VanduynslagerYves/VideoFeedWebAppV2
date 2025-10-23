@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CameraFeed.Processor", "Cam
 EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "CameraFeed.ObjectDetection", "CameraFeed.ObjectDetection\CameraFeed.ObjectDetection.pyproj", "{EB7DDE57-15CE-4F6D-A27B-8CE0C61330E6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CameraFeed.Shared", "CameraFeed.Shared\CameraFeed.Shared.csproj", "{2875E3F4-E52D-4031-B02E-DE7A84CAE681}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CameraFeed.SocketServer", "CameraFeed.SocketServer\CameraFeed.SocketServer.csproj", "{52BB049F-3D39-442F-B671-80B3880A104E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tryouts", "Tryouts\Tryouts.csproj", "{DF7D3B3D-C833-49E6-BA4D-223D29045AD5}"
@@ -27,10 +25,6 @@ Global
 		{84AF0234-CA10-4209-83D8-21C58BE9BA57}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EB7DDE57-15CE-4F6D-A27B-8CE0C61330E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EB7DDE57-15CE-4F6D-A27B-8CE0C61330E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2875E3F4-E52D-4031-B02E-DE7A84CAE681}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2875E3F4-E52D-4031-B02E-DE7A84CAE681}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2875E3F4-E52D-4031-B02E-DE7A84CAE681}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2875E3F4-E52D-4031-B02E-DE7A84CAE681}.Release|Any CPU.Build.0 = Release|Any CPU
 		{52BB049F-3D39-442F-B671-80B3880A104E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{52BB049F-3D39-442F-B671-80B3880A104E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{52BB049F-3D39-442F-B671-80B3880A104E}.Release|Any CPU.ActiveCfg = Release|Any CPU

@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using CameraFeed.Processor.Camera.Factories;
-using CameraFeed.Shared.DTOs;
+using CameraFeed.Processor.DTOs;
 using System.Collections.Concurrent;
 
 namespace CameraFeed.Processor.Camera;
@@ -20,6 +20,7 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, IMapp
     private readonly ConcurrentDictionary<int, IWorkerHandle> _workersDict = new();
     private readonly ICameraWorkerFactory _cameraWorkerFactory = cameraWorkerFactory;
     private readonly IMapper _mapper = mapper;
+    private readonly ILogger<CameraWorkerManager> _logger = logger;
 
     //TODO: add action delegates here for OnCreate, OnStart, OnStop events
     //and invoke them in the respective methods

@@ -1,5 +1,5 @@
 ﻿using CameraFeed.Processor.Repositories;
-using CameraFeed.Shared.DTOs;
+using CameraFeed.Processor.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using CameraFeed.Processor.Camera;
@@ -22,13 +22,13 @@ public class CameraController(ICameraWorkerManager cameraWorkerManager, IWorkerR
         return [.. _cameraWorkerManager.GetWorkerDtos(isActive: true)];
     }
 
-    [AllowAnonymous]
-    [HttpPost("person-detected")]
-    public async Task<IActionResult> PersonDetected([FromBody] PersonDetectedDto dto)
-    {
-        var notifyHumanDetectedGroup = $"camera_{dto.CameraId}_human_detected";
-        return Ok();
-    }
+    //[AllowAnonymous]
+    //[HttpPost("person-detected")]
+    //public async Task<IActionResult> PersonDetected([FromBody] PersonDetectedDto dto)
+    //{
+    //    var notifyHumanDetectedGroup = $"camera_{dto.CameraId}_human_detected";
+    //    return Ok();
+    //}
 
     //[Authorize]
     //[HttpPost("startcam/{cameraId}")]
