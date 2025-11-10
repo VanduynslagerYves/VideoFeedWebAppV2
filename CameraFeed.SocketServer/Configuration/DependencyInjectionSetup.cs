@@ -1,5 +1,4 @@
 ﻿using CameraFeed.SocketServer.Hubs;
-using CameraFeed.SocketServer.KeyGenerator;
 using CameraFeed.SocketServer.Repositories;
 
 namespace CameraFeed.SocketServer.Configuration;
@@ -12,6 +11,5 @@ public static class DependencyInjectionSetup
         services.AddSingleton<IBackendForwarder, BackendForwarder>();
 
         services.AddScoped<IApiKeyRepository, ApiKeyRepository>();
-        services.AddSingleton<IApiKeyGenerator, ApiKeyGenerator>();
     }
 }

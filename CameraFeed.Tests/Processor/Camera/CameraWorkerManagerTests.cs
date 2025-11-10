@@ -164,7 +164,7 @@ public class CameraWorkerManagerTests
     }
 
     #region Helpers
-    private CameraWorkerManager CreateManager() => new(_workerFactoryMock.Object, _mapperMock.Object, _loggerMock.Object);
+    private CameraWorkerManager CreateManager() => new(_workerFactoryMock.Object, _mapperMock.Object);
 
     private static ConcurrentDictionary<int, IWorkerHandle> GetWorkerHandles(CameraWorkerManager manager)
     {
