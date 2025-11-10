@@ -59,11 +59,7 @@ public class FrameProcessor : IFrameProcessor
         var jpegData = image.ToJpegData(quality);
         if (jpegData == null || jpegData.Length == 0) return null;
 
-        if(ShouldRunInference(frame))
-        {
-            // Run inference asynchronously (fire and forget)
-            jpegData = await RunInference(jpegData, cancellationToken);
-        }
+        if(ShouldRunInference(frame)) jpegData = await RunInference(jpegData, cancellationToken);
 
         // Drop frame if it exceeds the maximum allowed size (set in SocketServer SignalR options, TODO: get from SocketServer SignalR options)
         if (jpegData.Length >= maxSize)

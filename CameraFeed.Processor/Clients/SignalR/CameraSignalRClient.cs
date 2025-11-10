@@ -14,6 +14,7 @@ public interface ICameraSignalRclient
     bool IsRemoteStreamingEnabled(string camName);
 }
 
+//TODO: refactor to LocalCameraSignalRClient and RemoteCameraSignalRClient
 public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILogger<CameraSignalRClient> logger) : ICameraSignalRclient
 {
     private readonly IHubConnectionFactory _hubConnectionFactory = hubConnectionFactory;
@@ -135,7 +136,7 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
             await HandleStopAndDisposeAsync(token);
 
             _remoteHubConnection = _hubConnectionFactory.CreateRemoteConnection(
-                onStreamingEnabled: () => //TODO: just move this to CreateRemoteConnection
+                onStreamingEnabled: () =>
                 {
                     _remoteStreamingEnabled = true;
                     _logger.LogInformation("Remote streaming enabled for {camName}", _camName);

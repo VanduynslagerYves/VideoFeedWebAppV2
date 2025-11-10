@@ -30,13 +30,15 @@ public class CameraWorkerStartupService(IServiceProvider serviceProvider, ICamer
     {
         using var scope = _serviceProvider.CreateAsyncScope();
         var factory = scope.ServiceProvider.GetRequiredService<ICameraWorkerFactory>();
-        var workerRepository = scope.ServiceProvider.GetRequiredService<IWorkerRepository>();
+        var workerRepository = scope.ServiceProvider.GetRequiredService<IWorkerRepository>(); //TODO: refactor so we don't use ServiceLocator pattern
 
         var enabledWorkers = await workerRepository.GetEnabledWorkersAsync();
         if (enabledWorkers.Count == 0) return;
 
         // Initialize and start each enabled worker
         // Using Task.WhenAll to run startups in parallel
+
+        //TODO: needs rework. If a worker is persisted but no longer connected, this will try to start it and fail for the other workers too
         var startupTasks = enabledWorkers.Select(async workerRecord =>
         {
             var options = _mapper.Map<WorkerProperties>(workerRecord);

@@ -15,12 +15,9 @@ public interface ICameraWorkerManager
     IEnumerable<int> GetWorkerIds(bool isActive = true);
 }
 
-public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, IMapper mapper, ILogger<CameraWorkerManager> logger) : ICameraWorkerManager
+public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, IMapper mapper) : ICameraWorkerManager
 {
     private readonly ConcurrentDictionary<int, IWorkerHandle> _workersDict = new();
-    private readonly ICameraWorkerFactory _cameraWorkerFactory = cameraWorkerFactory;
-    private readonly IMapper _mapper = mapper;
-    private readonly ILogger<CameraWorkerManager> _logger = logger;
 
     //TODO: add action delegates here for OnCreate, OnStart, OnStop events
     //and invoke them in the respective methods
@@ -31,7 +28,7 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, IMapp
         var camId = options.CameraOptions.Id;
         if (_workersDict.ContainsKey(camId)) return camId; //Or invoke OnAlreadyExists delegates
 
-        var workerHandle = await _cameraWorkerFactory.CreateAsync(options);
+        var workerHandle = await cameraWorkerFactory.CreateAsync(options);
         _workersDict.TryAdd(camId, workerHandle);
 
         return camId;
@@ -60,7 +57,7 @@ public class CameraWorkerManager(ICameraWorkerFactory cameraWorkerFactory, IMapp
     public IEnumerable<CameraInfoDTO> GetWorkerDtos(bool isActive = true)
     {
         var workers = GetWorkers(isActive);
-        return workers.Select(w => _mapper.Map<CameraInfoDTO>(w));
+        return workers.Select(w => mapper.Map<CameraInfoDTO>(w));
     }
 
     public IEnumerable<int> GetWorkerIds(bool isActive = true)

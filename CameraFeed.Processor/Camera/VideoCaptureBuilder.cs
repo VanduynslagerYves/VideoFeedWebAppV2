@@ -173,6 +173,7 @@ public class VideoCaptureBuilder(int cameraId) : IVideoCaptureBuilder
             if (!capture.IsOpened)
                 throw new InvalidOperationException($"Camera {_cameraId} could not be initialized.");
 
+            //TODO: use CQS pattern to set properties ?
             if (_width.HasValue)
                 capture.Set(CapProp.FrameWidth, _width.Value);
             if (_height.HasValue)
@@ -181,7 +182,6 @@ public class VideoCaptureBuilder(int cameraId) : IVideoCaptureBuilder
                 capture.Set(CapProp.Fps, _framerate.Value);
             if (_fourcc.HasValue)
                 capture.Set(CapProp.FourCC, _fourcc.Value);
-
             if (_brightness.HasValue)
                 capture.Set(CapProp.Brightness, _brightness.Value);
             if (_contrast.HasValue)

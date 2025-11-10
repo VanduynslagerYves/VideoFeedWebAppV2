@@ -2,6 +2,7 @@
 
 namespace CameraFeed.SocketServer.Hubs;
 
+//TODO: inject IForwarderFactory and create a concrete BackendForwarderForwarder
 [Authorize]
 public class FrontendClientHub(IBackendForwarder forwarder, ILogger<FrontendClientHub> logger) : HubBase(logger)
 {
