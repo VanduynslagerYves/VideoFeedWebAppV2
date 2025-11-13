@@ -1,0 +1,6 @@
+after going from VS2022 to VS2026 the https dev cert stopped working (MOZILLA_PKIX_ERROR_SELF_SIGNED_CERT).
+Websocket negotiation (CORS) failed in the browser.
+Running the following commands in terminal and restarting the browser fixed the issue:
+
+dotnet dev-certs https --clean
+dotnet dev-certs https --trust
