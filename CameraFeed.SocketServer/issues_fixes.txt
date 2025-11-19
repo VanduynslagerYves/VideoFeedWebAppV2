@@ -4,3 +4,5 @@ Running the following commands in terminal and restarting the browser fixed the 
 
 dotnet dev-certs https --clean
 dotnet dev-certs https --trust
+
+check ook uitzonderingen in firefox: https://localhost:7244
