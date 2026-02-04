@@ -24,6 +24,7 @@ public class CameraSignalRClient(IHubConnectionFactory hubConnectionFactory, ILo
     //so we don’t have concurrent access to a single camera’s state. This is a key benefit of the actor model for lifecycle management.
     private readonly ConcurrentDictionary<string, IMessageActor> _actors = new();
 
+    //TODO: Make MessageActor a generic class that sets the type for local vs remote connection. MessageActor<T>
     public async Task CreateConnectionsAsync(string camName, CancellationToken token)
     {
         var actor = _actors.GetOrAdd(camName, name => new MessageActor(name, _hubConnectionFactory, _logger));
